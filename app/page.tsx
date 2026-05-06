@@ -952,8 +952,18 @@ function PantallaFlujo({ etapaActiva, setEtapaActiva, cambiarVista }: PantallaFl
   try {
     setGuardando(true);
 
-    await guardarEtapaDemo(etapa.num);
-    await actualizarEtapaProyecto(etapa.num);
+    const esModoRevision =
+      typeof window !== "undefined" &&
+      window.location.hostname.includes("vercel.app");
+
+    if (!esModoRevision) {
+      await guardarEtapaDemo(etapa.num);
+      await actualizarEtapaProyecto(etapa.num);
+    } else {
+      // En Vercel funciona como prototipo navegable para revisión UXLab.
+      // No intenta guardar en backend local.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
 
     setEtapasCompletadas((prev) => new Set([...prev, etapaActiva]));
     setIaVisible(false);
