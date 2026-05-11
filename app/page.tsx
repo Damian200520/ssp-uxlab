@@ -483,7 +483,7 @@ function LayoutPersonas() {
               <svg className="w-4 h-4 text-orange-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">{ICONS.personas}</svg>
               Herramienta: Plantilla de perfiles de persona usuaria
             </h4>
-            <p className="text-xs text-orange-800/70 mt-1 font-light max-w-2xl">Permite registrar varios arquetipos asociados al mismo proyecto, tal como fue sugerido por UXLab.</p>
+            <p className="text-xs text-orange-800/70 mt-1 font-light max-w-2xl">Permite registrar varios arquetipos asociados al mismo proyecto.</p>
           </div>
           <div className="bg-white border border-orange-100 rounded-2xl px-4 py-3 shadow-sm">
             <label className="block text-[9px] font-bold uppercase tracking-widest text-orange-700 mb-2">Cantidad de perfiles</label>

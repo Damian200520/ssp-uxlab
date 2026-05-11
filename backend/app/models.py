@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any
+from datetime import date
+from typing import Optional
 
 
 class ProyectoCreate(BaseModel):
@@ -94,3 +96,29 @@ class MomentoCriticoCreate(BaseModel):
     causa_raiz: str | None = None
     oportunidad_mejora: str | None = None
     sintesis_ia: str | None = None
+
+class CalendarizacionCreate(BaseModel):
+    proyecto_id: str
+    etapa: int
+    nombre_actividad: str
+    fecha_inicio: Optional[date] = None
+    fecha_fin: Optional[date] = None
+    responsable: Optional[str] = None
+    estado: Optional[str] = "pendiente"
+    observaciones: Optional[str] = None
+
+
+class CalendarizacionUpdate(BaseModel):
+    etapa: Optional[int] = None
+    nombre_actividad: Optional[str] = None
+    fecha_inicio: Optional[date] = None
+    fecha_fin: Optional[date] = None
+    responsable: Optional[str] = None
+    estado: Optional[str] = None
+    observaciones: Optional[str] = None
+
+class UsuarioAccesoCreate(BaseModel):
+    email: str
+    nombre_completo: Optional[str] = None
+    institucion: Optional[str] = None
+    cargo: Optional[str] = None

@@ -14,6 +14,9 @@ from app.models import (
     VinculacionCreate,
     IndicadorCreate,
     MomentoCriticoCreate,
+    CalendarizacionCreate,
+    CalendarizacionUpdate,
+    UsuarioAccesoCreate,
 )
 from app import crud
 
@@ -517,4 +520,223 @@ async def listar_momentos_criticos(proyecto_id: str):
     return {
         "proyecto": proyecto,
         "momentos_criticos": momentos,
+    }
+
+# =========================
+# Herramientas del Propósito 1
+# =========================
+
+@app.get("/herramientas/proposito/{proposito_id}")
+async def listar_herramientas_proposito(proposito_id: int):
+    herramientas = await crud.obtener_herramientas_por_proposito(proposito_id)
+
+    return {
+        "message": "Herramientas del propósito obtenidas correctamente",
+        "proposito_id": proposito_id,
+        "total": len(herramientas),
+        "data": herramientas,
+    }
+
+
+@app.get("/herramientas/proposito/{proposito_id}/etapa/{etapa}")
+async def listar_herramientas_por_etapa(proposito_id: int, etapa: int):
+    herramientas = await crud.obtener_herramientas_por_etapa(proposito_id, etapa)
+
+    return {
+        "message": "Herramientas de la etapa obtenidas correctamente",
+        "proposito_id": proposito_id,
+        "etapa": etapa,
+        "total": len(herramientas),
+        "data": herramientas,
+    }
+
+# =========================
+# Calendarización
+# =========================
+
+@app.post("/calendarizacion")
+async def crear_calendarizacion(data: CalendarizacionCreate):
+    calendarizacion = await crud.crear_calendarizacion(data)
+
+    return {
+        "message": "Actividad calendarizada correctamente",
+        "data": calendarizacion,
+    }
+
+
+@app.get("/proyectos/{proyecto_id}/calendarizacion")
+async def listar_calendarizacion_proyecto(proyecto_id: str):
+    calendarizacion = await crud.obtener_calendarizacion_por_proyecto(proyecto_id)
+
+    return {
+        "message": "Calendarización del proyecto obtenida correctamente",
+        "proyecto_id": proyecto_id,
+        "total": len(calendarizacion),
+        "data": calendarizacion,
+    }
+
+
+@app.get("/calendarizacion/{calendarizacion_id}")
+async def obtener_calendarizacion(calendarizacion_id: str):
+    calendarizacion = await crud.obtener_calendarizacion_por_id(calendarizacion_id)
+
+    if not calendarizacion:
+        return {
+            "message": "No se encontró la actividad calendarizada",
+            "data": None,
+        }
+
+    return {
+        "message": "Actividad calendarizada obtenida correctamente",
+        "data": calendarizacion,
+    }
+
+
+@app.patch("/calendarizacion/{calendarizacion_id}")
+async def actualizar_calendarizacion(calendarizacion_id: str, data: CalendarizacionUpdate):
+    calendarizacion = await crud.actualizar_calendarizacion(calendarizacion_id, data)
+
+    if not calendarizacion:
+        return {
+            "message": "No se encontró la actividad calendarizada para actualizar",
+            "data": None,
+        }
+
+    return {
+        "message": "Actividad calendarizada actualizada correctamente",
+        "data": calendarizacion,
+    }
+
+
+@app.delete("/calendarizacion/{calendarizacion_id}")
+async def eliminar_calendarizacion(calendarizacion_id: str):
+    resultado = await crud.eliminar_calendarizacion(calendarizacion_id)
+
+    if not resultado:
+        return {
+            "message": "No se encontró la actividad calendarizada para eliminar",
+            "data": None,
+        }
+
+    return {
+        "message": "Actividad calendarizada eliminada correctamente",
+        "data": resultado,
+    }
+
+# =========================
+# Resultados consolidados
+# =========================
+
+@app.get("/proyectos/{proyecto_id}/resultados")
+async def obtener_resultados_proyecto(proyecto_id: str):
+    resultados = await crud.obtener_resultados_proyecto(proyecto_id)
+
+    if not resultados:
+        return {
+            "message": "No se encontró el proyecto solicitado",
+            "data": None,
+        }
+
+    return {
+        "message": "Resultados consolidados del proyecto obtenidos correctamente",
+        "data": resultados,
+    }
+
+# =========================
+# Acceso básico de usuario
+# =========================
+
+@app.post("/usuarios/acceso")
+async def acceso_basico_usuario(data: UsuarioAccesoCreate):
+    resultado = await crud.crear_o_actualizar_usuario_basico(data)
+
+    return {
+        "message": "Acceso básico de usuario procesado correctamente",
+        "data": resultado,
+    }
+
+
+@app.get("/usuarios/buscar")
+async def buscar_usuario_por_email(email: str):
+    usuario = await crud.obtener_usuario_por_email(email)
+
+    if not usuario:
+        return {
+            "message": "No se encontró usuario con el correo indicado",
+            "data": None,
+        }
+
+    return {
+        "message": "Usuario obtenido correctamente",
+        "data": usuario,
+    }
+
+
+@app.get("/usuarios/{usuario_id}")
+async def obtener_usuario(usuario_id: str):
+    usuario = await crud.obtener_usuario_por_id(usuario_id)
+
+    if not usuario:
+        return {
+            "message": "No se encontró el usuario solicitado",
+            "data": None,
+        }
+
+    return {
+        "message": "Usuario obtenido correctamente",
+        "data": usuario,
+    }
+
+
+@app.patch("/proyectos/{proyecto_id}/usuario/{usuario_id}")
+async def asociar_usuario_proyecto(proyecto_id: str, usuario_id: str):
+    proyecto = await crud.asociar_usuario_a_proyecto(proyecto_id, usuario_id)
+
+    if not proyecto:
+        return {
+            "message": "No se encontró el proyecto para asociar el usuario",
+            "data": None,
+        }
+
+    return {
+        "message": "Usuario asociado correctamente al proyecto",
+        "data": proyecto,
+    }
+
+# =========================
+# Motor de ruta del Propósito 1
+# =========================
+
+@app.get("/proyectos/{proyecto_id}/ruta")
+async def obtener_ruta_proyecto(proyecto_id: str):
+    ruta = await crud.obtener_ruta_proposito_1(proyecto_id)
+
+    if not ruta:
+        return {
+            "message": "No se encontró el proyecto solicitado",
+            "data": None,
+        }
+
+    return {
+        "message": "Ruta del Propósito 1 obtenida correctamente",
+        "data": ruta,
+    }
+
+
+@app.patch("/proyectos/{proyecto_id}/ruta/avanzar")
+async def avanzar_ruta_proyecto(proyecto_id: str):
+    proyecto = await crud.avanzar_ruta_proposito_1(proyecto_id)
+
+    if not proyecto:
+        return {
+            "message": "No se encontró el proyecto solicitado para avanzar la ruta",
+            "data": None,
+        }
+
+    ruta_actualizada = await crud.obtener_ruta_proposito_1(proyecto_id)
+
+    return {
+        "message": "Ruta del proyecto avanzada correctamente",
+        "proyecto": proyecto,
+        "ruta_actualizada": ruta_actualizada,
     }
