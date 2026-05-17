@@ -17,6 +17,7 @@ from app.models import (
     CalendarizacionCreate,
     CalendarizacionUpdate,
     UsuarioAccesoCreate,
+    InvestigacionUpdate,
 )
 from app import crud
 
@@ -214,31 +215,6 @@ async def crear_investigacion(data: InvestigacionCreate):
         "message": "Investigación creada correctamente en Supabase",
         "data": investigacion,
     }
-
-
-@app.get("/proyectos/{proyecto_id}/investigacion")
-async def obtener_investigacion_proyecto(proyecto_id: str):
-    proyecto = await crud.obtener_proyecto(proyecto_id)
-
-    if not proyecto:
-        raise HTTPException(
-            status_code=404,
-            detail="Proyecto no encontrado."
-        )
-
-    investigacion = await crud.obtener_investigacion_por_proyecto(proyecto_id)
-
-    if not investigacion:
-        raise HTTPException(
-            status_code=404,
-            detail="Investigación no encontrada para este proyecto."
-        )
-
-    return {
-        "proyecto": proyecto,
-        "investigacion": investigacion,
-    }
-
 
 # =========================
 # Endpoints Personas usuarias
@@ -740,3 +716,82 @@ async def avanzar_ruta_proyecto(proyecto_id: str):
         "proyecto": proyecto,
         "ruta_actualizada": ruta_actualizada,
     }
+
+# =========================
+# Flujo Investigación
+# =========================
+
+
+@app.get("/proyectos/{proyecto_id}/investigaciones")
+async def listar_investigaciones_proyecto(proyecto_id: str):
+    investigaciones = await crud.listar_investigaciones_proyecto(proyecto_id)
+
+    return {
+        "message": "Planes de investigación obtenidos correctamente",
+        "data": investigaciones,
+    }
+
+@app.get("/investigaciones/{investigacion_id}")
+async def obtener_investigacion(investigacion_id: str):
+    investigacion = await crud.obtener_investigacion_por_id(investigacion_id)
+
+    if not investigacion:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró el plan de investigación solicitado."
+        )
+
+    return {
+        "message": "Plan de investigación obtenido correctamente",
+        "data": investigacion,
+    }
+
+
+@app.patch("/investigaciones/{investigacion_id}")
+async def actualizar_investigacion(investigacion_id: str, data: InvestigacionUpdate):
+    investigacion = await crud.actualizar_investigacion(investigacion_id, data)
+
+    if not investigacion:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró el plan de investigación para actualizar."
+        )
+
+    return {
+        "message": "Plan de investigación actualizado correctamente",
+        "data": investigacion,
+    }
+
+
+@app.delete("/investigaciones/{investigacion_id}")
+async def eliminar_investigacion(investigacion_id: str):
+    resultado = await crud.eliminar_investigacion(investigacion_id)
+
+    if not resultado:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró el plan de investigación para eliminar."
+        )
+
+    return {
+        "message": "Plan de investigación eliminado correctamente",
+        "data": resultado,
+    }
+
+
+@app.patch("/investigaciones/{investigacion_id}/validar")
+async def validar_plan_investigacion(investigacion_id: str):
+    investigacion = await crud.validar_plan_investigacion(investigacion_id)
+
+    if not investigacion:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró el plan de investigación para validar."
+        )
+
+    return {
+        "message": "Plan de investigación validado correctamente",
+        "data": investigacion,
+    }
+
+

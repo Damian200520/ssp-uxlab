@@ -1,5 +1,6 @@
 from app.database import get_connection
 from app.models import ProyectoCreate, ActualizarEtapaProyecto, RegistroEtapaCreate
+import json
 
 
 # =========================
@@ -319,8 +320,14 @@ async def crear_investigacion(data):
             data.objetivo_investigacion,
             data.metodologia,
             data.documentos_consultados,
-            data.sugerencia_ia,
-            data.completado,
+            json.dumps(data.aspectos_servicio),
+            json.dumps(data.personas_a_comprender),
+            json.dumps(data.informacion_recolectar),
+            json.dumps(data.tecnicas_investigacion),
+            json.dumps(data.preparativos_logistica),
+            json.dumps(data.preguntas_clave),
+            data.etapa_servicio,
+            data.estado_plan,
         )
 
         return dict(row)
@@ -1937,6 +1944,327 @@ async def avanzar_ruta_proposito_1(proyecto_id: str):
         )
 
         return dict(proyecto_actualizado)
+
+    finally:
+        await conn.close()
+
+# =========================
+# Flujo Investigación
+# =========================
+
+JSON_FIELDS_INVESTIGACION = [
+    "aspectos_servicio",
+    "personas_a_comprender",
+    "informacion_recolectar",
+    "tecnicas_investigacion",
+    "preparativos_logistica",
+    "preguntas_clave",
+]
+
+
+def _parse_investigacion_row(row):
+    if not row:
+        return None
+
+    data = dict(row)
+
+    for field in JSON_FIELDS_INVESTIGACION:
+        value = data.get(field)
+
+        if isinstance(value, str):
+            try:
+                data[field] = json.loads(value)
+            except Exception:
+                data[field] = []
+
+        if value is None:
+            data[field] = []
+
+    return data
+
+
+async def crear_investigacion(data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            insert into investigacion (
+                proyecto_id,
+                nombre_servicio,
+                contexto_servicio,
+                objetivo_investigacion,
+                metodologia,
+                documentos_consultados,
+                aspectos_servicio,
+                personas_a_comprender,
+                informacion_recolectar,
+                tecnicas_investigacion,
+                preparativos_logistica,
+                preguntas_clave,
+                etapa_servicio,
+                estado_plan,
+                completado
+            )
+            values (
+                $1::uuid,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7::jsonb,
+                $8::jsonb,
+                $9::jsonb,
+                $10::jsonb,
+                $11::jsonb,
+                $12::jsonb,
+                $13,
+                $14,
+                false
+            )
+            returning
+                id::text,
+                proyecto_id::text,
+                nombre_servicio,
+                contexto_servicio,
+                objetivo_investigacion,
+                metodologia,
+                documentos_consultados,
+                aspectos_servicio::text,
+                personas_a_comprender::text,
+                informacion_recolectar::text,
+                tecnicas_investigacion::text,
+                preparativos_logistica::text,
+                preguntas_clave::text,
+                etapa_servicio,
+                estado_plan,
+                completado,
+                created_at::text,
+                updated_at::text;
+            """,
+            data.proyecto_id,
+            data.nombre_servicio,
+            data.contexto_servicio,
+            data.objetivo_investigacion,
+            data.metodologia,
+            data.documentos_consultados,
+            json.dumps(data.aspectos_servicio),
+            json.dumps(data.personas_a_comprender),
+            json.dumps(data.informacion_recolectar),
+            json.dumps(data.tecnicas_investigacion),
+            json.dumps(data.preparativos_logistica),
+            json.dumps(data.preguntas_clave),
+            data.etapa_servicio,
+            data.estado_plan,
+        )
+
+        return _parse_investigacion_row(row)
+
+    finally:
+        await conn.close()
+
+
+async def listar_investigaciones_proyecto(proyecto_id: str):
+    conn = await get_connection()
+
+    try:
+        rows = await conn.fetch(
+            """
+            select
+                id::text,
+                proyecto_id::text,
+                nombre_servicio,
+                contexto_servicio,
+                objetivo_investigacion,
+                metodologia,
+                documentos_consultados,
+                aspectos_servicio::text,
+                personas_a_comprender::text,
+                informacion_recolectar::text,
+                tecnicas_investigacion::text,
+                preparativos_logistica::text,
+                preguntas_clave::text,
+                etapa_servicio,
+                estado_plan,
+                completado,
+                created_at::text,
+                updated_at::text
+            from investigacion
+            where proyecto_id = $1::uuid
+            order by created_at desc;
+            """,
+            proyecto_id,
+        )
+
+        return [_parse_investigacion_row(row) for row in rows]
+
+    finally:
+        await conn.close()
+
+
+async def obtener_investigacion_por_id(investigacion_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            select
+                id::text,
+                proyecto_id::text,
+                nombre_servicio,
+                contexto_servicio,
+                objetivo_investigacion,
+                metodologia,
+                documentos_consultados,
+                aspectos_servicio::text,
+                personas_a_comprender::text,
+                informacion_recolectar::text,
+                tecnicas_investigacion::text,
+                preparativos_logistica::text,
+                preguntas_clave::text,
+                etapa_servicio,
+                estado_plan,
+                completado,
+                created_at::text,
+                updated_at::text
+            from investigacion
+            where id = $1::uuid;
+            """,
+            investigacion_id,
+        )
+
+        return _parse_investigacion_row(row)
+
+    finally:
+        await conn.close()
+
+
+async def actualizar_investigacion(investigacion_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update investigacion
+            set
+                nombre_servicio = coalesce($2, nombre_servicio),
+                contexto_servicio = coalesce($3, contexto_servicio),
+                objetivo_investigacion = coalesce($4, objetivo_investigacion),
+                metodologia = coalesce($5, metodologia),
+                documentos_consultados = coalesce($6, documentos_consultados),
+                aspectos_servicio = coalesce($7::jsonb, aspectos_servicio),
+                personas_a_comprender = coalesce($8::jsonb, personas_a_comprender),
+                informacion_recolectar = coalesce($9::jsonb, informacion_recolectar),
+                tecnicas_investigacion = coalesce($10::jsonb, tecnicas_investigacion),
+                preparativos_logistica = coalesce($11::jsonb, preparativos_logistica),
+                preguntas_clave = coalesce($12::jsonb, preguntas_clave),
+                etapa_servicio = coalesce($13, etapa_servicio),
+                estado_plan = coalesce($14, estado_plan),
+                completado = coalesce($15::boolean, completado),
+                updated_at = now()
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                nombre_servicio,
+                contexto_servicio,
+                objetivo_investigacion,
+                metodologia,
+                documentos_consultados,
+                aspectos_servicio::text,
+                personas_a_comprender::text,
+                informacion_recolectar::text,
+                tecnicas_investigacion::text,
+                preparativos_logistica::text,
+                preguntas_clave::text,
+                etapa_servicio,
+                estado_plan,
+                completado,
+                created_at::text,
+                updated_at::text;
+            """,
+            investigacion_id,
+            data.nombre_servicio,
+            data.contexto_servicio,
+            data.objetivo_investigacion,
+            data.metodologia,
+            data.documentos_consultados,
+            json.dumps(data.aspectos_servicio) if data.aspectos_servicio is not None else None,
+            json.dumps(data.personas_a_comprender) if data.personas_a_comprender is not None else None,
+            json.dumps(data.informacion_recolectar) if data.informacion_recolectar is not None else None,
+            json.dumps(data.tecnicas_investigacion) if data.tecnicas_investigacion is not None else None,
+            json.dumps(data.preparativos_logistica) if data.preparativos_logistica is not None else None,
+            json.dumps(data.preguntas_clave) if data.preguntas_clave is not None else None,
+            data.etapa_servicio,
+            data.estado_plan,
+            data.completado,
+        )
+
+        return _parse_investigacion_row(row)
+
+    finally:
+        await conn.close()
+
+
+async def eliminar_investigacion(investigacion_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            delete from investigacion
+            where id = $1::uuid
+            returning id::text;
+            """,
+            investigacion_id,
+        )
+
+        if not row:
+            return None
+
+        return dict(row)
+
+    finally:
+        await conn.close()
+
+
+async def validar_plan_investigacion(investigacion_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update investigacion
+            set
+                estado_plan = 'listo_revision',
+                completado = true,
+                updated_at = now()
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                nombre_servicio,
+                contexto_servicio,
+                objetivo_investigacion,
+                metodologia,
+                documentos_consultados,
+                aspectos_servicio::text,
+                personas_a_comprender::text,
+                informacion_recolectar::text,
+                tecnicas_investigacion::text,
+                preparativos_logistica::text,
+                preguntas_clave::text,
+                etapa_servicio,
+                estado_plan,
+                completado,
+                created_at::text,
+                updated_at::text;
+            """,
+            investigacion_id,
+        )
+
+        return _parse_investigacion_row(row)
 
     finally:
         await conn.close()

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 
 
 class ProyectoCreate(BaseModel):
@@ -22,11 +22,21 @@ class RegistroEtapaCreate(BaseModel):
 class InvestigacionCreate(BaseModel):
     proyecto_id: str
     nombre_servicio: str = Field(..., min_length=3)
-    contexto_servicio: str = Field(..., min_length=3)
-    objetivo_investigacion: str = Field(..., min_length=3)
-    metodologia: str = Field(..., min_length=3)
-    documentos_consultados: list[str] = []
-    sugerencia_ia: str | None = None
+    contexto_servicio: Optional[str] = None
+    objetivo_investigacion: Optional[str] = None
+    metodologia: Optional[str] = None
+    documentos_consultados: List[str] = Field(default_factory=list)
+
+    aspectos_servicio: List[str] = Field(default_factory=list)
+    personas_a_comprender: List[str] = Field(default_factory=list)
+    informacion_recolectar: List[str] = Field(default_factory=list)
+    tecnicas_investigacion: List[str] = Field(default_factory=list)
+    preparativos_logistica: List[str] = Field(default_factory=list)
+    preguntas_clave: List[str] = Field(default_factory=list)
+
+    etapa_servicio: Optional[str] = "Descubrimiento"
+    estado_plan: Optional[str] = "borrador"
+    sugerencia_ia: Optional[str] = None
     completado: bool = False
 
 
@@ -122,3 +132,23 @@ class UsuarioAccesoCreate(BaseModel):
     nombre_completo: Optional[str] = None
     institucion: Optional[str] = None
     cargo: Optional[str] = None
+
+
+class InvestigacionUpdate(BaseModel):
+    nombre_servicio: Optional[str] = None
+    contexto_servicio: Optional[str] = None
+    objetivo_investigacion: Optional[str] = None
+    metodologia: Optional[str] = None
+    documentos_consultados: Optional[List[str]] = None
+
+    aspectos_servicio: Optional[List[str]] = None
+    personas_a_comprender: Optional[List[str]] = None
+    informacion_recolectar: Optional[List[str]] = None
+    tecnicas_investigacion: Optional[List[str]] = None
+    preparativos_logistica: Optional[List[str]] = None
+    preguntas_clave: Optional[List[str]] = None
+
+    etapa_servicio: Optional[str] = None
+    estado_plan: Optional[str] = None
+    sugerencia_ia: Optional[str] = None
+    completado: Optional[bool] = None
