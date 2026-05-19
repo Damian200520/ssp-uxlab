@@ -1,5 +1,6 @@
-import InvestigacionFlow from "./components/InvestigacionFlow";
+import NecesidadesFlow from "./components/NecesidadesFlow";
+// import InvestigacionFlow from "./components/InvestigacionFlow";
 
 export default function Home() {
-  return <InvestigacionFlow />;
+  return <NecesidadesFlow/>;
 }
