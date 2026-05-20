@@ -172,7 +172,11 @@ function ConfirmDialog({
 }
 
 
-export default function NecesidadesFlow() {
+export default function NecesidadesFlow({
+    onNavigate
+}: {
+    onNavigate?: (flujo: string | null) => void;
+}) {
     const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">("formulario");
     const [necesidades, setNecesidades] = useState<Necesidad[]>([]);
     const [personas, setPersonas] = useState<Persona[]>([]);
@@ -374,28 +378,29 @@ export default function NecesidadesFlow() {
                 {/* Sidebar */}
                 <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
                     <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
-                    <nav className="mt-10 space-y-2 text-sm">
+                    <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
                         {(
                             [
-                                ["← Volver al propósito", false],
-                                ["Inicio del propósito", false],
-                                ["Investigar", false],
-                                ["Definir Personas", false],
-                                ["Habilitación y Expectativas", false],
-                                ["Definir Necesidades", true],
-                                ["Idear", false],
-                                ["Prototipar", false],
-                                ["Evaluar", false],
-                                ["Implementar", false],
-                            ] as [string, boolean][]
-                        ).map(([label, active]) => (
-                            <div
+                                ["← Volver al Catálogo", null, false],
+                                ["Investigar", "investigacion", false],
+                                ["Definir Personas", "personas", false],
+                                ["Habilitación y Expectativas", "habilitacion", false],
+                                ["Definir Necesidades", "necesidades", true],
+                                ["Idear", "idear", false],
+                                ["Prototipar", "prototipar", false],
+                                ["Evaluar", "evaluar", false],
+                                ["Implementar", "implementar", false],
+                            ] as [string, string | null, boolean][]
+                        ).map(([label, route, active]) => (
+                            <button
                                 key={label}
-                                className={`rounded-xl px-3 py-3 ${active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600"
-                                    }`}
+                                onClick={() => onNavigate && onNavigate(route)}
+                                className={`w-full text-left rounded-xl px-3 py-3 ${
+                                    active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
+                                }`}
                             >
                                 {label}
-                            </div>
+                            </button>
                         ))}
                     </nav>
                 </aside>
