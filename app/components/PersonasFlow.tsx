@@ -312,6 +312,7 @@ export default function PersonasFlow() {
                             ["Inicio del propósito", false],
                             ["Investigar", false],
                             ["Definir Personas", true],
+                            ["Habilitación y Expectativas", false],
                             ["Definir Necesidades", false],
                             ["Idear", false],
                             ["Prototipar", false],

@@ -613,7 +613,15 @@ export default function InvestigacionFlow() {
             <div className="rounded-xl bg-teal-50 px-3 py-3 font-semibold text-teal-700">
               Investigar
             </div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">Definir</div>
+            <div className="rounded-xl px-3 py-3 text-slate-600">
+              Definir Personas
+            </div>
+            <div className="rounded-xl px-3 py-3 text-slate-600">
+              Habilitación y Expectativas
+            </div>
+            <div className="rounded-xl px-3 py-3 text-slate-600">
+              Definir Necesidades
+            </div>
             <div className="rounded-xl px-3 py-3 text-slate-600">Idear</div>
             <div className="rounded-xl px-3 py-3 text-slate-600">
               Prototipar

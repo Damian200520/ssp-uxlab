@@ -381,6 +381,7 @@ export default function NecesidadesFlow() {
                                 ["Inicio del propósito", false],
                                 ["Investigar", false],
                                 ["Definir Personas", false],
+                                ["Habilitación y Expectativas", false],
                                 ["Definir Necesidades", true],
                                 ["Idear", false],
                                 ["Prototipar", false],
