@@ -195,7 +195,11 @@ function ArrayEditor({
   );
 }
 
-export default function InvestigacionFlow() {
+export default function InvestigacionFlow({
+  onNavigate
+}: {
+  onNavigate?: (flujo: string | null) => void;
+}) {
   const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">(
     "formulario"
   );
@@ -632,33 +636,30 @@ export default function InvestigacionFlow() {
         <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
           <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
 
-          <nav className="mt-10 space-y-2 text-sm">
-            <div className="rounded-xl px-3 py-3 text-slate-600">
-              ← Volver al propósito
-            </div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">
-              Inicio del propósito
-            </div>
-            <div className="rounded-xl bg-teal-50 px-3 py-3 font-semibold text-teal-700">
-              Investigar
-            </div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">
-              Definir Personas
-            </div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">
-              Habilitación y Expectativas
-            </div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">
-              Definir Necesidades
-            </div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">Idear</div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">
-              Prototipar
-            </div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">Evaluar</div>
-            <div className="rounded-xl px-3 py-3 text-slate-600">
-              Implementar
-            </div>
+          <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
+            {(
+                [
+                    ["← Volver al Catálogo", null, false],
+                    ["Investigar", "investigacion", true],
+                    ["Definir Personas", "personas", false],
+                    ["Habilitación y Expectativas", "habilitacion", false],
+                    ["Definir Necesidades", "necesidades", false],
+                    ["Idear", "idear", false],
+                    ["Prototipar", "prototipar", false],
+                    ["Evaluar", "evaluar", false],
+                    ["Implementar", "implementar", false],
+                ] as [string, string | null, boolean][]
+            ).map(([label, route, active]) => (
+                <button
+                    key={label}
+                    onClick={() => onNavigate && onNavigate(route)}
+                    className={`w-full text-left rounded-xl px-3 py-3 ${
+                        active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                >
+                    {label}
+                </button>
+            ))}
           </nav>
         </aside>
 

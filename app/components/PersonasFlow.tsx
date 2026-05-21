@@ -207,7 +207,11 @@ function ConfirmDialog({
     );
 }
 
-export default function PersonasFlow() {
+export default function PersonasFlow({
+    onNavigate
+}: {
+    onNavigate?: (flujo: string | null) => void;
+}) {
     const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">("formulario");
     const [perfiles, setPerfiles] = useState<Perfil[]>([]);
     const [sugerenciasInvestigacion, setSugerenciasInvestigacion] = useState<string[]>([]);
@@ -407,28 +411,29 @@ async function validarPerfil(id: string) {
             <div className="flex">
                 <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
                     <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
-                    <nav className="mt-10 space-y-2 text-sm">
-                        {[
-                            ["← Volver al propósito", false],
-                            ["Inicio del propósito", false],
-                            ["Investigar", false],
-                            ["Definir Personas", true],
-                            ["Habilitación y Expectativas", false],
-                            ["Definir Necesidades", false],
-                            ["Idear", false],
-                            ["Prototipar", false],
-                            ["Evaluar", false],
-                            ["Implementar", false],
-                        ].map(([label, active]) => (
-                            <div
-                                key={label as string}
-                                className={`rounded-xl px-3 py-3 ${active
-                                    ? "bg-teal-50 font-semibold text-teal-700"
-                                    : "text-slate-600"
-                                    }`}
+                    <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
+                        {(
+                            [
+                                ["← Volver al Catálogo", null, false],
+                                ["Investigar", "investigacion", false],
+                                ["Definir Personas", "personas", true],
+                                ["Habilitación y Expectativas", "habilitacion", false],
+                                ["Definir Necesidades", "necesidades", false],
+                                ["Idear", "idear", false],
+                                ["Prototipar", "prototipar", false],
+                                ["Evaluar", "evaluar", false],
+                                ["Implementar", "implementar", false],
+                            ] as [string, string | null, boolean][]
+                        ).map(([label, route, active]) => (
+                            <button
+                                key={label}
+                                onClick={() => onNavigate && onNavigate(route)}
+                                className={`w-full text-left rounded-xl px-3 py-3 ${
+                                    active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
+                                }`}
                             >
-                                {label as string}
-                            </div>
+                                {label}
+                            </button>
                         ))}
                     </nav>
                 </aside>

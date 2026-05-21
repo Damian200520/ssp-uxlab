@@ -225,7 +225,7 @@ function estadoClass(cumplimiento?: string) {
 export default function HabilitacionFlow({
   onNavigate,
 }: {
-  onNavigate?: (flujo: "investigacion" | "habilitacion") => void;
+  onNavigate?: (flujo: string | null) => void;
 }) {
   const [tab, setTab] = useState<"habilitacion" | "expectativas" | "registros" | "lienzo">(
     "habilitacion"
@@ -700,29 +700,29 @@ window.dispatchEvent(
       <div className="flex">
         <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
           <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
-          <nav className="mt-10 space-y-2 text-sm">
+          <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
             {(
               [
-                ["← Volver al propósito", false],
-                ["Inicio del propósito", false],
-                ["Investigar", false],
-                ["Definir Personas", false],
-                ["Habilitación y Expectativas", true],
-                ["Definir Necesidades", false],
-                ["Idear", false],
-                ["Prototipar", false],
-                ["Evaluar", false],
-                ["Implementar", false],
-              ] as [string, boolean][]
-            ).map(([label, active]) => (
-              <div
+                ["← Volver al Catálogo", null, false],
+                ["Investigar", "investigacion", false],
+                ["Definir Personas", "personas", false],
+                ["Habilitación y Expectativas", "habilitacion", true],
+                ["Definir Necesidades", "necesidades", false],
+                ["Idear", "idear", false],
+                ["Prototipar", "prototipar", false],
+                ["Evaluar", "evaluar", false],
+                ["Implementar", "implementar", false],
+              ] as [string, string | null, boolean][]
+            ).map(([label, route, active]) => (
+              <button
                 key={label}
-                className={`rounded-xl px-3 py-3 ${
-                  active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600"
+                onClick={() => onNavigate && onNavigate(route)}
+                className={`w-full text-left rounded-xl px-3 py-3 ${
+                  active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 {label}
-              </div>
+              </button>
             ))}
           </nav>
         </aside>
@@ -740,9 +740,9 @@ window.dispatchEvent(
                 </h1>
 
                 <p className="mt-1 text-slate-500">
-                  Detecta niveles de habilitación y expectativas de las personas
+                  (Guía UXLab págs. 102-103) Detecta niveles de habilitación y expectativas de las personas
                   usuarias del servicio para asegurar una experiencia alineada a
-                  sus capacidades y necesidades.
+                  sus capacidades y necesidades, identificando barreras y facilitadores clave.
                 </p>
               </div>
             </div>
