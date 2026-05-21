@@ -1789,14 +1789,52 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
         etapa_actual = proyecto["etapa_actual"] or 1
 
         completitud = {
-            1: conteos["total_investigacion"] > 0,
-            2: conteos["total_personas"] > 0,
-            3: conteos["total_habilitacion"] > 0 and conteos["total_expectativas"] > 0,
-            4: conteos["total_necesidades"] > 0,
-            5: conteos["total_vinculaciones"] > 0,
-            6: conteos["total_indicadores"] > 0,
-            7: conteos["total_momentos_criticos"] > 0,
-        }
+    # Investigación se considera completa solo si existe un plan validado/completado
+    1: await conn.fetchval(
+        """
+        select count(*) > 0
+        from investigacion
+        where proyecto_id = $1::uuid
+        and (
+            completado = true
+            or estado_plan in ('listo_revision', 'validado')
+        );
+        """,
+        proyecto_id,
+    ),
+
+    # Personas se considera completa si existe al menos un perfil validado/completado
+    2: await conn.fetchval(
+        """
+        select count(*) > 0
+        from persona_usuaria
+        where proyecto_id = $1::uuid
+        and (
+            completado = true
+            or estado_perfil = 'validado'
+        );
+        """,
+        proyecto_id,
+    ),
+
+    # Habilitación y expectativas por ahora se considera completa si existen ambos registros
+    3: conteos["total_habilitacion"] > 0 and conteos["total_expectativas"] > 0,
+
+    # Necesidades se considera completa si existe una necesidad validada
+    4: await conn.fetchval(
+    """
+    select count(*) > 0
+    from necesidad
+    where proyecto_id = $1::uuid
+    and estado::text in ('Validado', 'validado');
+    """,
+    proyecto_id,
+),
+    # Estas etapas todavía no están implementadas en frontend, así que no deben aparecer completadas
+    5: False,
+    6: False,
+    7: False,
+}
 
         detalle_conteos = {
             1: {

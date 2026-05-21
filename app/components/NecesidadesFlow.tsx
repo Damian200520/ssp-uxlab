@@ -29,6 +29,10 @@ type Impacto = "Alto" | "Medio" | "Bajo";
 type Categoria = "Informar" | "Tramitar" | "Soporte";
 type EstadoNecesidad = "Borrador" | "Validado";
 
+interface MetaNecesidad extends Partial<FormState> {
+    estado_visual?: string;
+}
+
 interface FormState {
     persona_id: string;
     objetivo: string;
@@ -80,6 +84,82 @@ const FRICCIONES_SUGERIDAS = [
 ];
 
 
+
+const NECESIDAD_META_PREFIX = "::uxlab-necesidad-meta::";
+
+function serializarMetaNecesidad(form: FormState) {
+    return `${NECESIDAD_META_PREFIX}${JSON.stringify({
+        persona_id: form.persona_id,
+        objetivo: form.objetivo,
+        acciones: form.acciones,
+        situacion_inicial: form.situacion_inicial,
+        fricciones: form.fricciones,
+        rol_servicio: form.rol_servicio,
+        estado_visual: form.estado,
+    })}`;
+}
+
+function parsearMetaNecesidad(raw?: string | null): MetaNecesidad {
+    if (!raw || !raw.startsWith(NECESIDAD_META_PREFIX)) return {};
+
+    try {
+        return JSON.parse(raw.slice(NECESIDAD_META_PREFIX.length));
+    } catch {
+        return {};
+    }
+}
+
+function normalizarEstadoNecesidad(valor?: string): EstadoNecesidad {
+    if (valor === "Validado") return "Validado";
+    return "Borrador";
+}
+
+function normalizarImpacto(valor?: string): Impacto {
+    if (valor === "Alto" || valor === "Medio" || valor === "Bajo") return valor;
+    return "Medio";
+}
+
+function normalizarCategoria(valor?: string): Categoria {
+    if (valor === "Informar" || valor === "Tramitar" || valor === "Soporte") return valor;
+    return "Informar";
+}
+
+function mapPersonaUsuaria(row: any): Persona {
+    return {
+        id: String(row.id),
+        nombre: row.nombre_arquetipo || "Perfil sin nombre",
+        rol: row.rol || "",
+    };
+}
+
+function mapNecesidad(row: any): Necesidad {
+    const meta = parsearMetaNecesidad(row.sugerencia_ia);
+    return {
+        id: String(row.id),
+        created_at: row.created_at || "",
+        proyecto_id: row.proyecto_id || PROYECTO_ID,
+        persona_id: row.persona_usuaria_id || meta.persona_id || "",
+        objetivo: meta.objetivo || row.descripcion || "",
+        acciones: meta.acciones || "",
+        situacion_inicial: meta.situacion_inicial || row.descripcion || "",
+        fricciones: meta.fricciones || "",
+        impacto: normalizarImpacto(row.impacto),
+        rol_servicio: meta.rol_servicio || "",
+        categoria: normalizarCategoria(row.categoria),
+        estado: normalizarEstadoNecesidad(meta.estado_visual || row.estado),
+    };
+}
+
+function formToNecesidadDb(form: FormState) {
+  return {
+    persona_usuaria_id: form.persona_id || null,
+    descripcion: form.situacion_inicial || form.objetivo,
+    categoria: form.categoria,
+    impacto: form.impacto,
+    estado: form.estado,
+    sugerencia_ia: serializarMetaNecesidad(form),
+  };
+}
 function estadoClass(estado: EstadoNecesidad) {
     return estado === "Validado"
         ? "bg-teal-100 text-teal-700"
@@ -204,26 +284,41 @@ export default function NecesidadesFlow() {
 
 
     const cargarPersonas = useCallback(async (): Promise<Persona[]> => {
-        const { data } = await supabase.from("personas").select("id, nombre, rol");
-        const resultado = (data ?? []) as Persona[];
+        const { data, error } = await supabase
+            .from("persona_usuaria")
+            .select("id, nombre_arquetipo, rol")
+            .eq("proyecto_id", PROYECTO_ID)
+            .order("created_at", { ascending: true });
+
+        if (error) {
+            addToast("Error al cargar perfiles: " + error.message, "error");
+            setPersonas([]);
+            return [];
+        }
+
+        const resultado = (data ?? []).map(mapPersonaUsuaria);
         setPersonas(resultado);
         return resultado;
-    }, []);
+    }, [addToast]);
 
     const cargarNecesidades = useCallback(async () => {
         const { data, error } = await supabase
-            .from("necesidades")
+            .from("necesidad")
             .select("*")
+            .eq("proyecto_id", PROYECTO_ID)
             .order("created_at", { ascending: false });
 
-        if (!error && data) {
-            const resultado = data as Necesidad[];
-            setNecesidades(resultado);
-            setLienzoSeleccionado((prev) =>
-                prev ? (resultado.find((n) => n.id === prev.id) ?? null) : null
-            );
+        if (error) {
+            addToast("Error al cargar necesidades: " + error.message, "error");
+            return;
         }
-    }, []);
+
+        const resultado = (data ?? []).map(mapNecesidad);
+        setNecesidades(resultado);
+        setLienzoSeleccionado((prev) =>
+            prev ? (resultado.find((n) => n.id === prev.id) ?? null) : null
+        );
+    }, [addToast]);
 
     useEffect(() => {
         (async () => {
@@ -268,22 +363,12 @@ export default function NecesidadesFlow() {
         if (!validarForm()) return;
         setLoading(true);
 
-        const datosNecesidad = {
-            persona_id: form.persona_id,
-            objetivo: form.objetivo,
-            acciones: form.acciones,
-            situacion_inicial: form.situacion_inicial,
-            fricciones: form.fricciones,
-            impacto: form.impacto,
-            rol_servicio: form.rol_servicio,
-            categoria: form.categoria,
-            estado: form.estado,
-        };
+        const datosNecesidad = formToNecesidadDb(form);
 
         const { error } = idEnEdicion
-            ? await supabase.from("necesidades").update(datosNecesidad).eq("id", idEnEdicion)
+            ? await supabase.from("necesidad").update(datosNecesidad).eq("id", idEnEdicion)
             : await supabase
-                .from("necesidades")
+                .from("necesidad")
                 .insert([{ ...datosNecesidad, proyecto_id: PROYECTO_ID }]);
 
         setLoading(false);
@@ -325,7 +410,7 @@ export default function NecesidadesFlow() {
     async function confirmarEliminar() {
         if (!confirmPendiente) return;
         const { error } = await supabase
-            .from("necesidades")
+            .from("necesidad")
             .delete()
             .eq("id", confirmPendiente.id);
         if (!error) {
@@ -340,16 +425,41 @@ export default function NecesidadesFlow() {
 
 
     async function validarNecesidad(id: string) {
+        const necesidad = necesidades.find((n) => n.id === id);
+        if (!necesidad) return;
+
+        const formValidado: FormState = {
+            persona_id: necesidad.persona_id,
+            objetivo: necesidad.objetivo,
+            acciones: necesidad.acciones,
+            situacion_inicial: necesidad.situacion_inicial,
+            fricciones: necesidad.fricciones,
+            impacto: necesidad.impacto,
+            rol_servicio: necesidad.rol_servicio,
+            categoria: necesidad.categoria,
+            estado: "Validado",
+        };
+
         const { error } = await supabase
-            .from("necesidades")
-            .update({ estado: "Validado" })
-            .eq("id", id);
+  .from("necesidad")
+  .update({
+    estado: "Validado",
+    sugerencia_ia: serializarMetaNecesidad(formValidado),
+  })
+  .eq("id", id);
+
         if (!error) {
-            addToast("Necesidad validada correctamente.", "success");
-            await cargarNecesidades();
-        } else {
-            addToast("Error al validar: " + error.message, "error");
-        }
+    addToast("Necesidad validada correctamente.", "success");
+    await cargarNecesidades();
+
+    window.dispatchEvent(
+        new CustomEvent("actualizar-ruta-proposito", {
+            detail: { siguienteEtapa: 5 },
+        })
+    );
+} else {
+    addToast("Error al validar: " + error.message, "error");
+}
     }
 
     function verFicha(n: Necesidad) {
@@ -411,13 +521,6 @@ export default function NecesidadesFlow() {
                                 <p className="mt-1 text-slate-500">
                                     Mapeo e identificación exacta de fricciones y roles del servicio.
                                 </p>
-                            </div>
-                            <div className="min-w-72">
-                                <div className="text-center text-3xl font-bold">29%</div>
-                                <div className="text-center text-sm text-slate-500">Avance global</div>
-                                <div className="mt-3 h-3 rounded-full bg-slate-200">
-                                    <div className="h-3 w-[29%] rounded-full bg-teal-600" />
-                                </div>
                             </div>
                         </div>
                     </header>

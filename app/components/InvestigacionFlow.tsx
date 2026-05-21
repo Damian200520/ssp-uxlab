@@ -208,8 +208,29 @@ export default function InvestigacionFlow() {
   const [message, setMessage] = useState("");
 
   const lienzo = useMemo(() => {
-    return selected || investigaciones[0] || null;
-  }, [selected, investigaciones]);
+  if (tab === "lienzo" && editingId === null && form.nombre_servicio.trim()) {
+    return {
+      id: "vista-previa",
+      proyecto_id: PROYECTO_ID,
+      nombre_servicio: form.nombre_servicio,
+      contexto_servicio: form.contexto_servicio,
+      objetivo_investigacion: form.objetivo_investigacion,
+      metodologia: form.metodologia,
+      documentos_consultados: form.documentos_consultados,
+      aspectos_servicio: form.aspectos_servicio,
+      personas_a_comprender: form.personas_a_comprender,
+      informacion_recolectar: form.informacion_recolectar,
+      tecnicas_investigacion: form.tecnicas_investigacion,
+      preparativos_logistica: form.preparativos_logistica,
+      preguntas_clave: form.preguntas_clave,
+      etapa_servicio: form.etapa_servicio,
+      estado_plan: form.estado_plan,
+      completado: false,
+    } as Investigacion;
+  }
+
+  return selected || investigaciones[0] || null;
+}, [tab, editingId, form, selected, investigaciones]);
 
   async function leerErrorBackend(res: Response) {
     const text = await res.text();
@@ -425,36 +446,44 @@ export default function InvestigacionFlow() {
       setMessage("No se pudo eliminar el plan.");
     }
   }
-
+  
   async function validarInvestigacion(id: string) {
-    try {
-      const res = await fetch(`${API_URL}/investigaciones/${id}/validar`, {
-        method: "PATCH",
-      });
+  try {
+    const res = await fetch(`${API_URL}/investigaciones/${id}/validar`, {
+      method: "PATCH",
+    });
 
-      if (!res.ok) {
-        const errorText = await leerErrorBackend(res);
-        throw new Error(errorText);
-      }
-
-      const json = await res.json();
-      const investigacionValidada = normalizarInvestigacion(json.data);
-
-      setSelected(investigacionValidada);
-
-      setInvestigaciones((prev) =>
-        prev.map((item) =>
-          item.id === investigacionValidada.id ? investigacionValidada : item
-        )
-      );
-
-      setTab("lienzo");
-      setMessage("Plan validado correctamente.");
-    } catch (error) {
-      console.error("Error al validar investigación:", error);
-      setMessage("No se pudo validar el plan.");
+    if (!res.ok) {
+      const errorText = await leerErrorBackend(res);
+      throw new Error(errorText);
     }
+
+    const json = await res.json();
+    const investigacionValidada = normalizarInvestigacion(json.data);
+
+    setSelected(investigacionValidada);
+
+    setInvestigaciones((prev) =>
+      prev.map((item) =>
+        item.id === investigacionValidada.id ? investigacionValidada : item
+      )
+    );
+
+    setTab("lienzo");
+    setMessage("Plan validado correctamente.");
+
+    window.dispatchEvent(
+      new CustomEvent("actualizar-ruta-proposito", {
+        detail: { siguienteEtapa: 2 },
+      })
+    );
+  } catch (error) {
+    console.error("Error al validar investigación:", error);
+    setMessage("No se pudo validar el plan.");
   }
+}
+
+  
 
   function descargarLienzoPDF() {
     if (!lienzo) {
@@ -648,16 +677,6 @@ export default function InvestigacionFlow() {
                   servicio para planificar decisiones basadas en evidencia
                   directa.
                 </p>
-              </div>
-
-              <div className="min-w-72">
-                <div className="text-center text-3xl font-bold">29%</div>
-                <div className="text-center text-sm text-slate-500">
-                  Avance global
-                </div>
-                <div className="mt-3 h-3 rounded-full bg-slate-200">
-                  <div className="h-3 w-[29%] rounded-full bg-teal-600" />
-                </div>
               </div>
             </div>
           </header>

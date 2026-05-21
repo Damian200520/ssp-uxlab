@@ -7,10 +7,12 @@ const NIVELES = ["Bajo", "Medio", "Alto"] as const;
 const HAB_META_PREFIX = "::uxlab-hab-meta::";
 
 type HabilitacionMeta = {
+  persona_usuaria_id?: string;
   descripcion: string;
   barreras_detectadas: string;
   facilitadores: string;
   observaciones: string;
+  estado?: string;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -102,12 +104,18 @@ function createInitialHabilitacionForm(): HabilitacionForm {
   };
 }
 
-function serializarDescripcionHabilitacion(form: HabilitacionForm): string {
+function serializarDescripcionHabilitacion(
+  form: HabilitacionForm,
+  persona_usuaria_id = "",
+  estado = "borrador"
+): string {
   const meta: HabilitacionMeta = {
+    persona_usuaria_id,
     descripcion: form.descripcion_habilitacion,
     barreras_detectadas: form.barreras_detectadas,
     facilitadores: form.facilitadores,
     observaciones: form.observaciones,
+    estado,
   };
   return `${HAB_META_PREFIX}${JSON.stringify(meta)}`;
 }
@@ -143,6 +151,49 @@ function parsearDescripcionHabilitacion(
     observaciones: "",
   };
 }
+
+
+function obtenerMetaHabilitacion(raw?: string | null): Partial<HabilitacionMeta> {
+  if (!raw || !raw.startsWith(HAB_META_PREFIX)) return {};
+  try {
+    return JSON.parse(raw.slice(HAB_META_PREFIX.length)) as HabilitacionMeta;
+  } catch {
+    return {};
+  }
+}
+
+function normalizarPersonaUsuaria(row: any): PersonaUsuaria {
+  return {
+    id: String(row.id),
+    proyecto_id: row.proyecto_id || PROYECTO_ID,
+    nombre_arquetipo: row.nombre_arquetipo || "Perfil sin nombre",
+    rol: row.rol || "",
+    descripcion: row.descripcion || "",
+    necesidades: row.necesidades || [],
+    barreras: row.barreras || [],
+    motivaciones: row.motivaciones || [],
+    foto_url: row.foto_url || "",
+    created_at: row.created_at || "",
+    updated_at: row.updated_at || "",
+  };
+}
+
+function normalizarHabilitacion(row: any): Habilitacion {
+  const meta = obtenerMetaHabilitacion(row.descripcion_habilitacion);
+  return {
+    id: String(row.id),
+    proyecto_id: row.proyecto_id || PROYECTO_ID,
+    persona_usuaria_id: row.persona_usuaria_id || meta.persona_usuaria_id || "",
+    nivel_acceso: row.nivel_acceso || "",
+    nivel_conocimiento: row.nivel_conocimiento || "",
+    nivel_digital: row.nivel_digital || "",
+    descripcion_habilitacion: row.descripcion_habilitacion || "",
+    estado: row.estado || meta.estado || "borrador",
+    created_at: row.created_at || "",
+    updated_at: row.updated_at || "",
+  };
+}
+
 
 function habilitacionAResumen(hab: Habilitacion): string {
   return `${hab.nivel_acceso || "—"} / ${hab.nivel_conocimiento || "—"} / ${hab.nivel_digital || "—"}`;
@@ -305,21 +356,18 @@ export default function HabilitacionFlow({
   async function cargarPersonasUsuarias() {
     try {
       const { data, error } = await supabase
-        .from("personas")
-        .select("id, nombre, rol, perfil");
-      
+        .from("persona_usuaria")
+        .select("*")
+        .eq("proyecto_id", PROYECTO_ID)
+        .order("created_at", { ascending: true });
+
       if (error) {
-        console.warn("No se pudieron cargar personas desde Supabase:", error);
+        console.warn("No se pudieron cargar personas usuarias:", error);
+        setMessage("No se pudieron cargar los perfiles de personas usuarias.");
         return;
       }
 
-      const mappedData = (data || []).map(p => ({
-        id: p.id,
-        nombre_arquetipo: p.nombre,
-        rol: p.rol,
-        descripcion: p.perfil
-      }));
-
+      const mappedData = (data || []).map(normalizarPersonaUsuaria);
       setPersonasUsuarias(mappedData);
 
       if (mappedData.length > 0 && !perfilSeleccionado) {
@@ -329,62 +377,63 @@ export default function HabilitacionFlow({
       console.warn("Error general al cargar personas usuarias:", error);
     }
   }
-
   async function cargarHabilitaciones() {
     try {
-      const res = await fetch(
-        `${API_URL}/proyectos/${PROYECTO_ID}/habilitacion`
-      );
+      const { data, error } = await supabase
+        .from("habilitacion")
+        .select("*")
+        .eq("proyecto_id", PROYECTO_ID)
+        .order("created_at", { ascending: false });
 
-      if (!res.ok) {
-        console.log("Habilitaciones no encontradas");
+      if (error) {
+        console.warn("Error al cargar habilitaciones:", error);
         return;
       }
 
-      const json = await res.json();
-      const data = json.habilitaciones || [];
-
-      setHabilitaciones(data);
+      const habilitacionesMapeadas = (data || []).map(normalizarHabilitacion);
+      setHabilitaciones(habilitacionesMapeadas);
 
       if (perfilSeleccionado) {
-        const delPerfil = data.find(
+        const delPerfil = habilitacionesMapeadas.find(
           (h: Habilitacion) => h.persona_usuaria_id === perfilSeleccionado.id
         );
         cargarFormularioHabilitacion(delPerfil || null);
       }
     } catch (error) {
-      console.warn("Error al cargar habilitaciones (backend no disponible):", error);
+      console.warn("Error al cargar habilitaciones:", error);
     }
   }
 
   async function cargarExpectativas() {
     try {
-      const res = await fetch(
-        `${API_URL}/proyectos/${PROYECTO_ID}/expectativas`
-      );
+      const { data, error } = await supabase
+        .from("expectativa")
+        .select("*")
+        .eq("proyecto_id", PROYECTO_ID)
+        .order("created_at", { ascending: false });
 
-      if (!res.ok) {
-        throw new Error("No se pudieron cargar las expectativas");
+      if (error) {
+        throw error;
       }
 
-      const json = await res.json();
-      const data = json.data || json.expectativas || [];
-
-      setExpectativas(data);
+      setExpectativas((data || []) as Expectativa[]);
     } catch (error) {
-      console.warn("Error al listar expectativas (backend no disponible):", error);
+      console.warn("Error al listar expectativas:", error);
     }
   }
 
   async function obtenerExpectativaPorId(id: string) {
-    const res = await fetch(`${API_URL}/expectativas/${id}`);
+    const { data, error } = await supabase
+      .from("expectativa")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (!res.ok) {
-      throw new Error("No se pudo cargar");
+    if (error) {
+      throw new Error("No se pudo cargar la expectativa.");
     }
 
-    const json = await res.json();
-    return json.data as Expectativa;
+    return data as Expectativa;
   }
 
   async function editarExpectativa(id: string) {
@@ -442,40 +491,37 @@ export default function HabilitacionFlow({
     setMessage("");
 
     try {
-      const url = editingHabilitacionId
-        ? `${API_URL}/habilitacion/${editingHabilitacionId}`
-        : `${API_URL}/habilitacion`;
-
       const datosGuardar = {
         nivel_acceso: habilitacionForm.nivel_acceso,
         nivel_conocimiento: habilitacionForm.nivel_conocimiento,
         nivel_digital: habilitacionForm.nivel_digital,
         descripcion_habilitacion: serializarDescripcionHabilitacion(
-          habilitacionForm
+          habilitacionForm,
+          perfilSeleccionado.id,
+          "borrador"
         ),
       };
 
-      const payload = editingHabilitacionId
-        ? datosGuardar
-        : {
-            proyecto_id: PROYECTO_ID,
-            persona_usuaria_id: perfilSeleccionado.id,
-            ...datosGuardar,
-          };
+      const operacion = editingHabilitacionId
+        ? supabase
+            .from("habilitacion")
+            .update(datosGuardar)
+            .eq("id", editingHabilitacionId)
+            .select()
+            .single()
+        : supabase
+            .from("habilitacion")
+            .insert([{ ...datosGuardar, proyecto_id: PROYECTO_ID }])
+            .select()
+            .single();
 
-      const res = await fetch(url, {
-        method: editingHabilitacionId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const { data, error } = await operacion;
 
-      if (!res.ok) {
-        const errorText = await leerErrorBackend(res);
-        throw new Error(errorText);
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const json = await res.json();
-      const guardada = json.data as Habilitacion;
+      const guardada = normalizarHabilitacion(data);
       cargarFormularioHabilitacion(guardada);
       await cargarHabilitaciones();
       setTab("registros");
@@ -505,35 +551,26 @@ export default function HabilitacionFlow({
     setMessage("");
 
     try {
-      const url = editingExpectativaId
-        ? `${API_URL}/expectativas/${editingExpectativaId}`
-        : `${API_URL}/expectativas`;
-
       const { observaciones, ...restoExpectativa } = expectativaForm;
       const payloadBase = {
         ...restoExpectativa,
         analisis_ia: observaciones || null,
       };
 
-      const payload = editingExpectativaId
-        ? payloadBase
-        : {
-            proyecto_id: PROYECTO_ID,
-            ...payloadBase,
-          };
+      const operacion = editingExpectativaId
+        ? supabase
+            .from("expectativa")
+            .update(payloadBase)
+            .eq("id", editingExpectativaId)
+        : supabase
+            .from("expectativa")
+            .insert([{ ...payloadBase, proyecto_id: PROYECTO_ID }]);
 
-      const res = await fetch(url, {
-        method: editingExpectativaId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const { error } = await operacion;
 
-      if (!res.ok) {
-        const errorText = await leerErrorBackend(res);
-        throw new Error(errorText);
+      if (error) {
+        throw new Error(error.message);
       }
-
-      await res.json();
 
       setEditingExpectativaId(null);
       setExpectativaForm({
@@ -562,12 +599,13 @@ export default function HabilitacionFlow({
     if (!ok) return;
 
     try {
-      const res = await fetch(`${API_URL}/expectativas/${id}`, {
-        method: "DELETE",
-      });
+      const { error } = await supabase
+        .from("expectativa")
+        .delete()
+        .eq("id", id);
 
-      if (!res.ok) {
-        throw new Error("No se pudo eliminar");
+      if (error) {
+        throw new Error(error.message);
       }
 
       await cargarExpectativas();
@@ -594,8 +632,12 @@ export default function HabilitacionFlow({
     if (!ok) return;
 
     try {
-      const res = await fetch(`${API_URL}/habilitacion/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("No se pudo eliminar");
+      const { error } = await supabase
+        .from("habilitacion")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw new Error(error.message);
 
       await cargarHabilitaciones();
       setMessage("Habilitación eliminada correctamente.");
@@ -614,21 +656,40 @@ export default function HabilitacionFlow({
 
   async function validarHabilitacion(id: string) {
     try {
-      const res = await fetch(`${API_URL}/habilitacion/${id}/validar`, {
-        method: "PATCH",
-      });
-      if (!res.ok) throw new Error("No se pudo validar");
+      const hab = habilitaciones.find((item) => item.id === id);
+      if (!hab) return;
 
-      const json = await res.json();
-      const hab = json.data as Habilitacion;
-      const perfil = personasUsuarias.find(
-        (p) => p.id === hab.persona_usuaria_id
-      );
+      const formHab = parsearDescripcionHabilitacion(hab.descripcion_habilitacion || "", {
+        nivel_acceso: hab.nivel_acceso,
+        nivel_conocimiento: hab.nivel_conocimiento,
+        nivel_digital: hab.nivel_digital,
+      });
+
+      const { error } = await supabase
+        .from("habilitacion")
+        .update({
+          descripcion_habilitacion: serializarDescripcionHabilitacion(
+            formHab,
+            hab.persona_usuaria_id,
+            "validado"
+          ),
+        })
+        .eq("id", id);
+
+      if (error) throw new Error(error.message);
+
+      const perfil = personasUsuarias.find((p) => p.id === hab.persona_usuaria_id);
       if (perfil) seleccionarPerfil(perfil);
 
-      await cargarHabilitaciones();
-      setTab("lienzo");
-      setMessage("Habilitación y expectativas validadas correctamente.");
+    await cargarHabilitaciones();
+setTab("lienzo");
+setMessage("Habilitación y expectativas validadas correctamente.");
+
+window.dispatchEvent(
+  new CustomEvent("actualizar-ruta-proposito", {
+    detail: { siguienteEtapa: 4 },
+  })
+);
     } catch (error) {
       console.error(error);
       setMessage("No se pudo validar el registro.");
@@ -683,16 +744,6 @@ export default function HabilitacionFlow({
                   usuarias del servicio para asegurar una experiencia alineada a
                   sus capacidades y necesidades.
                 </p>
-              </div>
-
-              <div className="min-w-72">
-                <div className="text-center text-3xl font-bold">29%</div>
-                <div className="text-center text-sm text-slate-500">
-                  Avance global
-                </div>
-                <div className="mt-3 h-3 rounded-full bg-slate-200">
-                  <div className="h-3 w-[29%] rounded-full bg-teal-600" />
-                </div>
               </div>
             </div>
           </header>

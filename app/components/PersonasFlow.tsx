@@ -18,6 +18,7 @@ interface Perfil {
     necesidades_tag: string;
     barreras: string;
     motivaciones: string;
+    foto_url: string;
     estado_perfil: EstadoPerfil;
 }
 
@@ -38,6 +39,7 @@ interface FormState {
     necesidades_tag: string;
     barreras: string;
     motivaciones: string;
+    foto_url: string;
     estado_perfil: EstadoPerfil;
 }
 
@@ -48,7 +50,8 @@ interface Toast {
 }
 
 
-const PROYECTO_ID = "31576cfb-4c12-4080-a8c3-1f422b4830de";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const PROYECTO_ID = process.env.NEXT_PUBLIC_PROYECTO_ID || "31576cfb-4c12-4080-a8c3-1f422b4830de";
 
 const FORM_INICIAL: FormState = {
     rol: "Persona Usuaria",
@@ -61,15 +64,9 @@ const FORM_INICIAL: FormState = {
     necesidades_tag: "",
     barreras: "",
     motivaciones: "",
+    foto_url: "",
     estado_perfil: "Borrador",
 };
-
-const SUGERENCIAS_INVESTIGACION = [
-    "Personas mayores",
-    "Baja alfabetización digital",
-    "Uso esporádico del servicio",
-];
-
 
 function estadoClass(estado: EstadoPerfil) {
     return estado === "Validado"
@@ -88,6 +85,71 @@ function generarSugerenciaIA(form: FormState): string {
         return "Al ser el primer acceso, la barrera principal es el desconocimiento del lenguaje técnico. Se recomienda lenguaje claro.";
     }
     return "Análisis completado. El perfil parece equilibrado. Valida que las expectativas coincidan con los canales elegidos.";
+}
+
+
+function textoALista(value?: string | null): string[] {
+    if (!value) return [];
+
+    return value
+        .split(/[,;\n]/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function listaATexto(value: unknown): string {
+    if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+    if (typeof value === "string") return value;
+    return "";
+}
+
+function normalizarEstadoPerfil(value: unknown): EstadoPerfil {
+    const estado = String(value || "").toLowerCase();
+    return estado === "validado" ? "Validado" : "Borrador";
+}
+
+function dbToPerfil(row: any): Perfil {
+    return {
+        id: String(row.id),
+        created_at: row.created_at || "",
+        proyecto_id: String(row.proyecto_id || PROYECTO_ID),
+        rol: row.rol || "Persona Usuaria",
+        nombre: row.nombre_arquetipo || "Perfil sin nombre",
+        perfil: row.descripcion || "",
+        nivel_digital: (row.nivel_digital || "Intermedio") as NivelDigital,
+        canales_contacto: (Array.isArray(row.canales_contacto)
+            ? row.canales_contacto[0] || "Digital"
+            : row.canales_contacto || "Digital") as CanalContacto,
+        expectativas: listaATexto(row.expectativas),
+        relacion_servicio: (row.relacion_servicio || "Uso frecuente") as RelacionServicio,
+        necesidades_tag: listaATexto(row.necesidades),
+        barreras: listaATexto(row.barreras),
+        motivaciones: listaATexto(row.motivaciones),
+        foto_url: row.foto_url || "",
+        estado_perfil: normalizarEstadoPerfil(row.estado_perfil),
+    };
+}
+
+function formToPersonaUsuariaDb(form: FormState) {
+    const validado = form.estado_perfil === "Validado";
+
+    return {
+        proyecto_id: PROYECTO_ID,
+        nombre_arquetipo: form.nombre,
+        rol: form.rol,
+        relacion_servicio: form.relacion_servicio,
+        descripcion: form.acceso,
+        necesidades: textoALista(form.necesidades_tag),
+        barreras: textoALista(form.barreras),
+        motivaciones: textoALista(form.motivaciones),
+        foto_url: form.foto_url?.trim() || null,
+        expectativas: textoALista(form.expectativas),
+        canales_contacto: [form.canales_contacto],
+        nivel_digital: form.nivel_digital,
+        fuente_perfil: "manual",
+        estado_perfil: validado ? "validado" : "borrador",
+        completado: validado,
+    };
 }
 
 
@@ -148,44 +210,87 @@ function ConfirmDialog({
 export default function PersonasFlow() {
     const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">("formulario");
     const [perfiles, setPerfiles] = useState<Perfil[]>([]);
+    const [sugerenciasInvestigacion, setSugerenciasInvestigacion] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [idEnEdicion, setIdEnEdicion] = useState<string | null>(null);
     const [lienzoSeleccionado, setLienzoSeleccionado] = useState<Perfil | null>(null);
     const [form, setForm] = useState<FormState>(FORM_INICIAL);
     const [toasts, setToasts] = useState<Toast[]>([]);
-    const [toastCounter, setToastCounter] = useState(0);
     const [sugerenciaIA, setSugerenciaIA] = useState<string | null>(null);
     const [confirmPendiente, setConfirmPendiente] = useState<{ id: string } | null>(null);
     const [erroresForm, setErroresForm] = useState<Partial<Record<keyof FormState, string>>>({});
 
 
     const addToast = useCallback((message: string, type: Toast["type"] = "success") => {
-        const id = toastCounter + 1;
-        setToastCounter(id);
+        const id = Date.now() + Math.floor(Math.random() * 1000);
+
         setToasts((prev) => [...prev, { id, type, message }]);
-        setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
-    }, [toastCounter]);
+
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 4000);
+    }, []);
 
     const removeToast = (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id));
 
 
     const cargarPerfiles = useCallback(async () => {
         const { data, error } = await supabase
-            .from("personas")
+            .from("persona_usuaria")
             .select("*")
+            .eq("proyecto_id", PROYECTO_ID)
             .order("created_at", { ascending: false });
 
-        if (!error && data) {
-            setPerfiles(data as Perfil[]);
-            setLienzoSeleccionado((prev) =>
-                prev ? ((data as Perfil[]).find((p) => p.id === prev.id) ?? null) : null
+        if (error) {
+            addToast("No se pudieron cargar los perfiles: " + error.message, "error");
+            return;
+        }
+
+        const perfilesNormalizados = (data || []).map(dbToPerfil);
+        setPerfiles(perfilesNormalizados);
+        setLienzoSeleccionado((prev) =>
+            prev ? (perfilesNormalizados.find((perfil) => perfil.id === prev.id) ?? null) : null
+        );
+    }, [addToast]);
+
+    const cargarSugerenciasInvestigacion = useCallback(async () => {
+        try {
+            const res = await fetch(
+                `${API_URL}/proyectos/${PROYECTO_ID}/investigaciones`
             );
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(errorText);
+            }
+
+            const json = await res.json();
+            const investigaciones = json.data || [];
+
+            const sugerencias = Array.from(
+                new Set(
+                    investigaciones
+                        .flatMap((row: any) =>
+                            Array.isArray(row.personas_a_comprender)
+                                ? row.personas_a_comprender
+                                : []
+                        )
+                        .map((item: unknown) => String(item).trim())
+                        .filter(Boolean)
+                )
+            ) as string[];
+
+            setSugerenciasInvestigacion(sugerencias);
+        } catch (error) {
+            console.warn("No se pudieron cargar sugerencias desde Investigación:", error);
+            setSugerenciasInvestigacion([]);
         }
     }, []);
 
     useEffect(() => {
         cargarPerfiles();
-    }, [cargarPerfiles]);
+        cargarSugerenciasInvestigacion();
+    }, [cargarPerfiles, cargarSugerenciasInvestigacion]);
 
     function validarForm(): boolean {
         const errores: typeof erroresForm = {};
@@ -200,23 +305,11 @@ export default function PersonasFlow() {
 
         setLoading(true);
 
-        const datosPerfil = {
-            rol: form.rol,
-            nombre: form.nombre,
-            perfil: form.acceso,
-            nivel_digital: form.nivel_digital,
-            canales_contacto: form.canales_contacto,
-            expectativas: form.expectativas,
-            relacion_servicio: form.relacion_servicio,
-            necesidades_tag: form.necesidades_tag,
-            barreras: form.barreras,
-            motivaciones: form.motivaciones,
-            estado_perfil: form.estado_perfil,
-        };
+        const datosPerfil = formToPersonaUsuariaDb(form);
 
         const { error } = idEnEdicion
-            ? await supabase.from("personas").update(datosPerfil).eq("id", idEnEdicion)
-            : await supabase.from("personas").insert([{ ...datosPerfil, proyecto_id: PROYECTO_ID }]);
+            ? await supabase.from("persona_usuaria").update(datosPerfil).eq("id", idEnEdicion)
+            : await supabase.from("persona_usuaria").insert([datosPerfil]);
 
         setLoading(false);
 
@@ -245,6 +338,7 @@ export default function PersonasFlow() {
             necesidades_tag: p.necesidades_tag ?? "",
             barreras: p.barreras ?? "",
             motivaciones: p.motivaciones ?? "",
+            foto_url: p.foto_url ?? "",
             estado_perfil: p.estado_perfil ?? "Borrador",
         });
         setIdEnEdicion(p.id);
@@ -260,7 +354,7 @@ export default function PersonasFlow() {
 
     async function confirmarEliminar() {
         if (!confirmPendiente) return;
-        const { error } = await supabase.from("personas").delete().eq("id", confirmPendiente.id);
+        const { error } = await supabase.from("persona_usuaria").delete().eq("id", confirmPendiente.id);
         if (!error) {
             if (lienzoSeleccionado?.id === confirmPendiente.id) setLienzoSeleccionado(null);
             addToast("Perfil eliminado.", "info");
@@ -272,18 +366,25 @@ export default function PersonasFlow() {
     }
 
 
-    async function validarPerfil(id: string) {
-        const { error } = await supabase
-            .from("personas")
-            .update({ estado_perfil: "Validado" })
-            .eq("id", id);
-        if (!error) {
-            addToast("Perfil validado correctamente.", "success");
-            await cargarPerfiles();
-        } else {
-            addToast("Error al validar: " + error.message, "error");
-        }
+async function validarPerfil(id: string) {
+    const { error } = await supabase
+        .from("persona_usuaria")
+        .update({ estado_perfil: "validado", completado: true })
+        .eq("id", id);
+
+    if (!error) {
+        addToast("Perfil validado correctamente.", "success");
+        await cargarPerfiles();
+
+        window.dispatchEvent(
+            new CustomEvent("actualizar-ruta-proposito", {
+                detail: { siguienteEtapa: 3 },
+            })
+        );
+    } else {
+        addToast("Error al validar: " + error.message, "error");
     }
+}
 
     function verFicha(p: Perfil) {
         setLienzoSeleccionado(p);
@@ -344,13 +445,6 @@ export default function PersonasFlow() {
                                 <p className="mt-1 text-slate-500">
                                     Alineación completa con el estándar metodológico UXLab.
                                 </p>
-                            </div>
-                            <div className="min-w-72">
-                                <div className="text-center text-3xl font-bold">29%</div>
-                                <div className="text-center text-sm text-slate-500">Avance global</div>
-                                <div className="mt-3 h-3 rounded-full bg-slate-200">
-                                    <div className="h-3 w-[29%] rounded-full bg-teal-600" />
-                                </div>
                             </div>
                         </div>
                     </header>
@@ -436,9 +530,13 @@ export default function PersonasFlow() {
                                                 <span className="text-xs text-slate-500 font-medium py-1">
                                                     Sugerencias desde Investigación:
                                                 </span>
-                                                {SUGERENCIAS_INVESTIGACION.map((sug) => (
+                                                {sugerenciasInvestigacion.length === 0 ? (
+                                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-400">
+                                                        Sin sugerencias cargadas
+                                                    </span>
+                                                ) : sugerenciasInvestigacion.map((sug, index) => (
                                                     <button
-                                                        key={sug}
+                                                        key={`${sug}-${index}`}
                                                         type="button"
                                                         onClick={() => setForm({ ...form, nombre: sug })}
                                                         className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-xs text-teal-700 hover:bg-teal-100"
@@ -461,6 +559,20 @@ export default function PersonasFlow() {
                                             {erroresForm.nombre && (
                                                 <p className="mt-1 text-xs text-red-500">{erroresForm.nombre}</p>
                                             )}
+                                        </div>
+
+                                        <div>
+                                            <label className="font-semibold text-sm">Foto o avatar del perfil</label>
+                                            <input
+                                                type="url"
+                                                value={form.foto_url}
+                                                onChange={(e) => setForm({ ...form, foto_url: e.target.value })}
+                                                placeholder="Pega la URL de una imagen, por ejemplo https://..."
+                                                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                            />
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                Opcional. Si no agregas una imagen, se mostrará la inicial del perfil en la ficha.
+                                            </p>
                                         </div>
 
                                         <div>
@@ -656,14 +768,30 @@ export default function PersonasFlow() {
                                                         : "border-slate-200 bg-white"
                                                         }`}
                                                 >
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">
-                                                                {p.rol}
-                                                            </span>
-                                                            <h3 className="text-lg font-bold text-slate-800 leading-tight">
-                                                                {p.nombre}
-                                                            </h3>
+                                                    <div className="flex justify-between items-start gap-4">
+                                                        <div className="flex items-start gap-3">
+                                                            {p.foto_url ? (
+                                                                <img
+                                                                    src={p.foto_url}
+                                                                    alt={p.nombre}
+                                                                    className="h-12 w-12 rounded-full border border-slate-200 object-cover"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = "none";
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-teal-100 bg-teal-50 text-lg font-bold text-teal-700">
+                                                                    {p.nombre?.charAt(0)?.toUpperCase() || "P"}
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">
+                                                                    {p.rol}
+                                                                </span>
+                                                                <h3 className="text-lg font-bold text-slate-800 leading-tight">
+                                                                    {p.nombre}
+                                                                </h3>
+                                                            </div>
                                                         </div>
                                                         <span
                                                             className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${estadoClass(
@@ -728,14 +856,30 @@ export default function PersonasFlow() {
                                         </p>
                                     ) : (
                                         <div className="space-y-8">
-                                            <div className="flex justify-between items-center border-b border-slate-200 pb-5">
-                                                <div>
-                                                    <h2 className="text-3xl font-bold text-slate-900">
-                                                        {lienzoSeleccionado.nombre}
-                                                    </h2>
-                                                    <p className="text-teal-700 font-medium mt-1">
-                                                        {lienzoSeleccionado.rol} · {lienzoSeleccionado.relacion_servicio}
-                                                    </p>
+                                            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                                                <div className="flex items-center gap-5">
+                                                    {lienzoSeleccionado.foto_url ? (
+                                                        <img
+                                                            src={lienzoSeleccionado.foto_url}
+                                                            alt={lienzoSeleccionado.nombre}
+                                                            className="h-24 w-24 rounded-full border border-slate-200 object-cover"
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display = "none";
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-teal-100 bg-teal-50 text-3xl font-bold text-teal-700">
+                                                            {lienzoSeleccionado.nombre?.charAt(0)?.toUpperCase() || "P"}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <h2 className="text-3xl font-bold text-slate-900">
+                                                            {lienzoSeleccionado.nombre}
+                                                        </h2>
+                                                        <p className="text-teal-700 font-medium mt-1">
+                                                            {lienzoSeleccionado.rol} · {lienzoSeleccionado.relacion_servicio}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <span
                                                     className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide ${estadoClass(
