@@ -338,45 +338,60 @@ async function cargarPropositos() {
   }, [vista]);
 
   async function ingresarUsuario() {
-    if (!formUsuario.email.trim()) {
-      setMensaje("Debes ingresar un correo para acceder.");
-      return;
-    }
-
-    setLoading(true);
-    setMensaje("");
-
-    try {
-      const res = await fetch(`${API_URL}/usuarios/acceso`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formUsuario),
-      });
-
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-
-      const json = await res.json();
-      const usuarioProcesado = json.data?.usuario || {
-        email: formUsuario.email,
-        nombre_completo: formUsuario.nombre_completo,
-        institucion: formUsuario.institucion,
-        cargo: formUsuario.cargo,
-      };
-
-      setUsuario(usuarioProcesado);
-      localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioProcesado));
-      setVista("propositos");
-    } catch (error) {
-      console.error("Error al ingresar:", error);
-      setMensaje("No se pudo procesar el acceso del usuario.");
-    } finally {
-      setLoading(false);
-    }
+  if (!formUsuario.email.trim()) {
+    setMensaje("Debes ingresar un correo para acceder.");
+    return;
   }
+
+  setLoading(true);
+  setMensaje("");
+
+  try {
+    const res = await fetch(`${API_URL}/usuarios/acceso`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formUsuario),
+    });
+
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+
+    const json = await res.json();
+
+    const usuarioProcesado = json.data?.usuario || {
+      email: formUsuario.email,
+      nombre_completo: formUsuario.nombre_completo,
+      institucion: formUsuario.institucion,
+      cargo: formUsuario.cargo,
+    };
+
+    setUsuario(usuarioProcesado);
+    localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioProcesado));
+    setVista("propositos");
+  } catch (error) {
+    console.warn(
+      "No se pudo conectar con el backend. Se usará acceso local para prototipo:",
+      error
+    );
+
+    const usuarioLocal = {
+      id: "usuario-demo",
+      email: formUsuario.email,
+      nombre_completo: formUsuario.nombre_completo || "Usuario demo",
+      institucion: formUsuario.institucion || "Institución demo",
+      cargo: formUsuario.cargo || "Revisor/a",
+    };
+
+    setUsuario(usuarioLocal);
+    localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioLocal));
+    setVista("propositos");
+  } finally {
+    setLoading(false);
+  }
+}
 
   function cerrarSesion() {
     localStorage.removeItem("ssp_uxlab_usuario");
