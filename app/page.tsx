@@ -160,6 +160,43 @@ function estadoTexto(etapa: RutaEtapa) {
   return "Pendiente";
 }
 
+const propositosFallback: Proposito[] = [
+  {
+    id: 1,
+    titulo: "Propósito 1: Comprender la experiencia actual",
+    descripcion:
+      "Contar con un diagnóstico claro para individualizar desafíos y comprender la experiencia real.",
+    activo: true,
+  },
+  {
+    id: 2,
+    titulo: "Propósito 2: Incorporar perspectiva usuaria",
+    descripcion:
+      "Ejecutar acciones orientadas a reforzar la orientación a las personas en la institución.",
+    activo: false,
+  },
+  {
+    id: 3,
+    titulo: "Propósito 3: Mejorar satisfacción con el servicio",
+    descripcion:
+      "Identificar oportunidades de mejora y definir planes para elevar la satisfacción general.",
+    activo: false,
+  },
+  {
+    id: 4,
+    titulo: "Propósito 4: Mejorar la colaboración interna",
+    descripcion:
+      "Apoyar el trabajo colaborativo para el diseño de servicios coherentes.",
+    activo: false,
+  },
+  {
+    id: 5,
+    titulo: "Propósito 5: Diseñar un nuevo servicio",
+    descripcion:
+      "Transformar una necesidad no resuelta en una propuesta clara de servicio.",
+    activo: false,
+  },
+];
 
 
 export default function Home() {
@@ -257,16 +294,22 @@ export default function Home() {
 }, []);
   
 
-  async function cargarPropositos() {
-    try {
-      const res = await fetch(`${API_URL}/propositos`);
-      const json = await res.json();
-      setPropositos(json.data || []);
-    } catch (error) {
-      console.error("Error al cargar propósitos:", error);
-      setMensaje("No se pudieron cargar los propósitos.");
+async function cargarPropositos() {
+  try {
+    const res = await fetch(`${API_URL}/propositos`);
+
+    if (!res.ok) {
+      throw new Error(await res.text());
     }
+
+    const json = await res.json();
+    setPropositos(json.data || propositosFallback);
+  } catch (error) {
+    console.warn("No se pudieron cargar propósitos desde backend. Se usará catálogo local:", error);
+    setPropositos(propositosFallback);
+    setMensaje("");
   }
+}
 
   async function cargarRuta() {
     try {
