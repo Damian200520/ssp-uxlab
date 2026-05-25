@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Check, X, Smartphone, Phone } from "lucide-react";
+import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
 import { supabase } from "./supabaseClient";
 
 
@@ -70,23 +72,9 @@ const FORM_INICIAL: FormState = {
 
 function estadoClass(estado: EstadoPerfil) {
     return estado === "Validado"
-        ? "bg-teal-100 text-teal-700"
-        : "bg-amber-100 text-amber-700";
+        ? "bg-gradient-to-r from-teal-50 to-emerald-50 text-teal-700 border border-teal-200/50"
+        : "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/50";
 }
-
-function generarSugerenciaIA(form: FormState): string {
-    if (form.nivel_digital === "Nulo" || form.nivel_digital === "Básico") {
-        return `Para «${form.nombre || "este perfil"}», se detecta un nivel digital bajo. Prioriza canales presenciales y añade la barrera "Dificultad con contraseñas".`;
-    }
-    if (form.rol === "Persona Funcionaria") {
-        return "Los perfiles funcionarios suelen valorar la eficiencia. Añade la motivación «Optimización de tiempos internos».";
-    }
-    if (form.relacion_servicio === "Primer acceso") {
-        return "Al ser el primer acceso, la barrera principal es el desconocimiento del lenguaje técnico. Se recomienda lenguaje claro.";
-    }
-    return "Análisis completado. El perfil parece equilibrado. Valida que las expectativas coincidan con los canales elegidos.";
-}
-
 
 function textoALista(value?: string | null): string[] {
     if (!value) return [];
@@ -156,19 +144,19 @@ function formToPersonaUsuariaDb(form: FormState) {
 function ToastList({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: number) => void }) {
     if (!toasts.length) return null;
     const colors: Record<Toast["type"], string> = {
-        success: "bg-teal-600",
-        error: "bg-red-500",
-        info: "bg-slate-700",
+        success: "bg-gradient-to-br from-teal-600 to-emerald-600",
+        error: "bg-gradient-to-br from-red-500 to-rose-600",
+        info: "bg-gradient-to-br from-slate-700 to-slate-800",
     };
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
             {toasts.map((t) => (
                 <div
                     key={t.id}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${colors[t.type]}`}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-black/10 ${colors[t.type]}`}
                 >
                     <span>{t.message}</span>
-                    <button onClick={() => onRemove(t.id)} className="ml-2 opacity-70 hover:opacity-100">✕</button>
+                    <button onClick={() => onRemove(t.id)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity" aria-label="Cerrar notificación"><X className="h-4 w-4" /></button>
                 </div>
             ))}
         </div>
@@ -185,19 +173,19 @@ function ConfirmDialog({
     onCancel: () => void;
 }) {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl shadow-black/10">
                 <p className="text-sm text-slate-700">{message}</p>
                 <div className="mt-5 flex justify-end gap-3">
                     <button
                         onClick={onCancel}
-                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={onConfirm}
-                        className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
+                        className="rounded-xl bg-gradient-to-br from-red-500 to-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-red-600 hover:to-rose-700 hover:shadow-md"
                     >
                         Eliminar
                     </button>
@@ -220,7 +208,6 @@ export default function PersonasFlow({
     const [lienzoSeleccionado, setLienzoSeleccionado] = useState<Perfil | null>(null);
     const [form, setForm] = useState<FormState>(FORM_INICIAL);
     const [toasts, setToasts] = useState<Toast[]>([]);
-    const [sugerenciaIA, setSugerenciaIA] = useState<string | null>(null);
     const [confirmPendiente, setConfirmPendiente] = useState<{ id: string } | null>(null);
     const [erroresForm, setErroresForm] = useState<Partial<Record<keyof FormState, string>>>({});
 
@@ -323,7 +310,6 @@ export default function PersonasFlow({
             addToast(idEnEdicion ? "¡Perfil actualizado!" : "¡Perfil guardado!", "success");
             setForm(FORM_INICIAL);
             setIdEnEdicion(null);
-            setSugerenciaIA(null);
             await cargarPerfiles();
             setTab("registros");
         }
@@ -346,7 +332,6 @@ export default function PersonasFlow({
             estado_perfil: p.estado_perfil ?? "Borrador",
         });
         setIdEnEdicion(p.id);
-        setSugerenciaIA(null);
         setErroresForm({});
         setTab("formulario");
     }
@@ -397,7 +382,7 @@ async function validarPerfil(id: string) {
 
 
     return (
-        <main className="min-h-screen bg-slate-50 text-slate-900">
+        <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
             <ToastList toasts={toasts} onRemove={removeToast} />
 
             {confirmPendiente && (
@@ -409,9 +394,9 @@ async function validarPerfil(id: string) {
             )}
 
             <div className="flex">
-                <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
-                    <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
-                    <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
+                <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+                    <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
+                    <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
                         {(
                             [
                                 ["← Volver al Catálogo", null, false],
@@ -428,8 +413,8 @@ async function validarPerfil(id: string) {
                             <button
                                 key={label}
                                 onClick={() => onNavigate && onNavigate(route)}
-                                className={`w-full text-left rounded-xl px-3 py-3 ${
-                                    active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
+                                className={`w-full text-left rounded-xl px-3 py-3 transition-all duration-150 ${
+                                    active ? "bg-gradient-to-r from-teal-50 to-emerald-50 font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
                                 }`}
                             >
                                 {label}
@@ -439,15 +424,14 @@ async function validarPerfil(id: string) {
                 </aside>
 
                 <section className="w-full">
-                    {/* Header */}
-                    <header className="border-b border-slate-200 bg-white px-6 py-4">
+                    <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <div className="inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm">
+                                <div className="inline-flex rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm shadow-sm">
                                     Propósito 1 · Diseñar servicios centrados en las personas
                                 </div>
-                                <h1 className="mt-6 text-4xl font-bold">Personas</h1>
-                                <p className="mt-1 text-slate-500">
+                                <h1 className="mt-6 text-4xl font-bold tracking-tight">Personas</h1>
+                                <p className="mt-1 text-slate-500 leading-relaxed">
                                     Alineación completa con el estándar metodológico UXLab.
                                 </p>
                             </div>
@@ -455,20 +439,20 @@ async function validarPerfil(id: string) {
                     </header>
 
                     <div className="px-6 py-6">
-                        <div className="mb-6 flex gap-6 border-b border-slate-200">
+                        <div className="mb-6 flex gap-6 border-b border-slate-200/80">
                             {(
                                 [
-                                    ["formulario", idEnEdicion ? "Editando Perfil…" : "Formulario"],
+                                    ["formulario", idEnEdicion ? "Editando perfil…" : "Formulario"],
                                     ["registros", "Perfiles guardados"],
-                                    ["lienzo", "Ficha de Persona"],
+                                    ["lienzo", "Ficha de persona"],
                                 ] as [typeof tab, string][]
                             ).map(([key, label]) => (
                                 <button
                                     key={key}
                                     onClick={() => setTab(key)}
-                                    className={`border-b-2 px-2 pb-3 text-sm font-semibold ${tab === key
+                                    className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${tab === key
                                         ? "border-teal-600 text-teal-700"
-                                        : "border-transparent text-slate-500"
+                                        : "border-transparent text-slate-500 hover:text-slate-700"
                                         }`}
                                 >
                                     {label}
@@ -476,12 +460,13 @@ async function validarPerfil(id: string) {
                             ))}
                         </div>
 
+                        <AsistenciaIAEtapa etapa={2} contexto="Personas" />
+
                         {tab === "formulario" && (
                             <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
                                 <div className="space-y-6">
-                                    {/* Descripción */}
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                        <h2 className="text-xl font-bold">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+                                        <h2 className="text-xl font-bold tracking-tight">
                                             Herramienta: Plantilla de perfiles de persona usuaria
                                         </h2>
                                         <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
@@ -492,17 +477,16 @@ async function validarPerfil(id: string) {
                                         </p>
                                     </div>
 
-                                    {/* Campos */}
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50 space-y-5">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="font-semibold text-sm">Rol del grupo</label>
+                                                <label className="font-semibold text-sm text-slate-700">Rol del grupo</label>
                                                 <select
                                                     value={form.rol}
                                                     onChange={(e) =>
                                                         setForm({ ...form, rol: e.target.value as RolPerfil })
                                                     }
-                                                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 >
                                                     <option>Persona Usuaria</option>
                                                     <option>PEC</option>
@@ -511,7 +495,7 @@ async function validarPerfil(id: string) {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="font-semibold text-sm">Relación con el servicio</label>
+                                                <label className="font-semibold text-sm text-slate-700">Relación con el servicio</label>
                                                 <select
                                                     value={form.relacion_servicio}
                                                     onChange={(e) =>
@@ -520,7 +504,7 @@ async function validarPerfil(id: string) {
                                                             relacion_servicio: e.target.value as RelacionServicio,
                                                         })
                                                     }
-                                                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 >
                                                     <option>Uso frecuente</option>
                                                     <option>Uso esporádico</option>
@@ -530,13 +514,13 @@ async function validarPerfil(id: string) {
                                         </div>
 
                                         <div>
-                                            <label className="font-semibold text-sm">Nombre del Perfil</label>
+                                            <label className="font-semibold text-sm text-slate-700">Nombre del Perfil</label>
                                             <div className="flex flex-wrap gap-2 mt-2 mb-2">
                                                 <span className="text-xs text-slate-500 font-medium py-1">
                                                     Sugerencias desde Investigación:
                                                 </span>
                                                 {sugerenciasInvestigacion.length === 0 ? (
-                                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-400">
+                                                    <span className="rounded-full border border-slate-200/60 bg-slate-50 px-2 py-0.5 text-xs text-slate-400">
                                                         Sin sugerencias cargadas
                                                     </span>
                                                 ) : sugerenciasInvestigacion.map((sug, index) => (
@@ -544,7 +528,7 @@ async function validarPerfil(id: string) {
                                                         key={`${sug}-${index}`}
                                                         type="button"
                                                         onClick={() => setForm({ ...form, nombre: sug })}
-                                                        className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-xs text-teal-700 hover:bg-teal-100"
+                                                        className="rounded-full border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-2 py-0.5 text-xs text-teal-700 transition-all duration-150 hover:from-teal-100 hover:to-emerald-100 shadow-sm"
                                                     >
                                                         + {sug}
                                                     </button>
@@ -558,7 +542,7 @@ async function validarPerfil(id: string) {
                                                     if (erroresForm.nombre) setErroresForm({ ...erroresForm, nombre: undefined });
                                                 }}
                                                 placeholder="Ej: Adulto Mayor Digitalizado"
-                                                className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-teal-600 ${erroresForm.nombre ? "border-red-400 bg-red-50" : "border-slate-200"
+                                                className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 ${erroresForm.nombre ? "border-red-400 bg-red-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
                                                     }`}
                                             />
                                             {erroresForm.nombre && (
@@ -567,13 +551,13 @@ async function validarPerfil(id: string) {
                                         </div>
 
                                         <div>
-                                            <label className="font-semibold text-sm">Foto o avatar del perfil</label>
+                                            <label className="font-semibold text-sm text-slate-700">Foto o avatar del perfil</label>
                                             <input
                                                 type="url"
                                                 value={form.foto_url}
                                                 onChange={(e) => setForm({ ...form, foto_url: e.target.value })}
                                                 placeholder="Pega la URL de una imagen, por ejemplo https://..."
-                                                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                             />
                                             <p className="mt-1 text-xs text-slate-500">
                                                 Opcional. Si no agregas una imagen, se mostrará la inicial del perfil en la ficha.
@@ -581,7 +565,7 @@ async function validarPerfil(id: string) {
                                         </div>
 
                                         <div>
-                                            <label className="font-semibold text-sm">
+                                            <label className="font-semibold text-sm text-slate-700">
                                                 ¿Cómo viven o acceden al servicio? (Descripción)
                                             </label>
                                             <textarea
@@ -591,7 +575,7 @@ async function validarPerfil(id: string) {
                                                     if (erroresForm.acceso) setErroresForm({ ...erroresForm, acceso: undefined });
                                                 }}
                                                 placeholder="Describe las características principales..."
-                                                className={`mt-2 min-h-24 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-teal-600 ${erroresForm.acceso ? "border-red-400 bg-red-50" : "border-slate-200"
+                                                className={`mt-2 min-h-24 w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 ${erroresForm.acceso ? "border-red-400 bg-red-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
                                                     }`}
                                             />
                                             {erroresForm.acceso && (
@@ -601,13 +585,13 @@ async function validarPerfil(id: string) {
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="font-semibold text-sm">Nivel Digital</label>
+                                                <label className="font-semibold text-sm text-slate-700">Nivel Digital</label>
                                                 <select
                                                     value={form.nivel_digital}
                                                     onChange={(e) =>
                                                         setForm({ ...form, nivel_digital: e.target.value as NivelDigital })
                                                     }
-                                                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 >
                                                     <option>Nulo</option>
                                                     <option>Básico</option>
@@ -616,7 +600,7 @@ async function validarPerfil(id: string) {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="font-semibold text-sm">Canal de Contacto</label>
+                                                <label className="font-semibold text-sm text-slate-700">Canal de Contacto</label>
                                                 <select
                                                     value={form.canales_contacto}
                                                     onChange={(e) =>
@@ -625,7 +609,7 @@ async function validarPerfil(id: string) {
                                                             canales_contacto: e.target.value as CanalContacto,
                                                         })
                                                     }
-                                                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 >
                                                     <option>Presencial</option>
                                                     <option>Telefónico</option>
@@ -642,7 +626,7 @@ async function validarPerfil(id: string) {
                                                     value={form.necesidades_tag}
                                                     onChange={(e) => setForm({ ...form, necesidades_tag: e.target.value })}
                                                     placeholder="Ej: Información clara"
-                                                    className="mt-2 w-full rounded-xl border border-emerald-200 bg-emerald-50/40 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                                                    className="mt-2 w-full rounded-xl border border-emerald-200/60 bg-emerald-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 hover:border-emerald-300"
                                                 />
                                             </div>
                                             <div>
@@ -652,7 +636,7 @@ async function validarPerfil(id: string) {
                                                     value={form.barreras}
                                                     onChange={(e) => setForm({ ...form, barreras: e.target.value })}
                                                     placeholder="Ej: Falta de clave única"
-                                                    className="mt-2 w-full rounded-xl border border-orange-200 bg-orange-50/40 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                                                    className="mt-2 w-full rounded-xl border border-orange-200/60 bg-orange-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 hover:border-orange-300"
                                                 />
                                             </div>
                                             <div>
@@ -662,18 +646,18 @@ async function validarPerfil(id: string) {
                                                     value={form.motivaciones}
                                                     onChange={(e) => setForm({ ...form, motivaciones: e.target.value })}
                                                     placeholder="Ej: Autonomía"
-                                                    className="mt-2 w-full rounded-xl border border-blue-200 bg-blue-50/40 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                                    className="mt-2 w-full rounded-xl border border-blue-200/60 bg-blue-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 hover:border-blue-300"
                                                 />
                                             </div>
                                         </div>
 
                                         <div>
-                                            <label className="font-semibold text-sm">Expectativas del Servicio</label>
+                                            <label className="font-semibold text-sm text-slate-700">Expectativas del Servicio</label>
                                             <textarea
                                                 value={form.expectativas}
                                                 onChange={(e) => setForm({ ...form, expectativas: e.target.value })}
                                                 placeholder="¿Qué espera lograr esta persona idealmente?"
-                                                className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                             />
                                         </div>
                                     </div>
@@ -685,10 +669,9 @@ async function validarPerfil(id: string) {
                                                 onClick={() => {
                                                     setForm(FORM_INICIAL);
                                                     setIdEnEdicion(null);
-                                                    setSugerenciaIA(null);
                                                     setErroresForm({});
                                                 }}
-                                                className="rounded-xl border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                                                className="rounded-xl border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
                                             >
                                                 Cancelar edición
                                             </button>
@@ -697,55 +680,24 @@ async function validarPerfil(id: string) {
                                             type="button"
                                             onClick={guardarPerfil}
                                             disabled={loading}
-                                            className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                                            className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md disabled:opacity-50"
                                         >
-                                            {loading ? "Guardando…" : idEnEdicion ? "Actualizar Perfil" : "Guardar Perfil"}
+                                            {loading ? "Guardando…" : idEnEdicion ? "Actualizar perfil" : "Guardar perfil"}
                                         </button>
                                     </div>
                                 </div>
 
-                                <aside className="space-y-6">
-                                    <div className="border border-slate-200 rounded-2xl bg-white p-5 shadow-sm space-y-4">
-                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 tracking-wider uppercase">
-                                            <span>✨</span> ASISTENCIA METODOLÓGICA UXLab AI
-                                        </div>
-                                        <div className="text-sm bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3">
-                                            <p className="text-slate-600 text-xs leading-relaxed">
-                                                Identifica brechas digitales o canales preferidos basados en el arquetipo
-                                                seleccionado para refinar los tags cualitativos.
-                                            </p>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSugerenciaIA(generarSugerenciaIA(form))}
-                                                className="w-full text-center rounded-xl bg-teal-50 border border-teal-200 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-100 transition-colors"
-                                            >
-                                                Mostrar sugerencia
-                                            </button>
-                                            {sugerenciaIA && (
-                                                <div className="rounded-xl bg-teal-50 border border-teal-200 p-3 text-xs text-teal-800 leading-relaxed">
-                                                    <span className="font-bold block mb-1">UXLab AI</span>
-                                                    {sugerenciaIA}
-                                                    <button
-                                                        onClick={() => setSugerenciaIA(null)}
-                                                        className="mt-2 block text-teal-500 hover:text-teal-700 text-[10px]"
-                                                    >
-                                                        Cerrar
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                        <h3 className="font-bold text-sm">Plantilla de persona usuaria</h3>
+                                <aside className="space-y-5">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                                        <h3 className="font-bold text-sm text-slate-800">Plantilla de persona usuaria</h3>
                                         <ul className="mt-4 space-y-3 text-[13px] text-slate-700">
                                             {[
                                                 "Rol y relación vinculados",
-                                                "Tags cualitativos mapeados",
+                                                "Etiquetas cualitativas definidas",
                                                 "Expectativas redactadas",
                                             ].map((item) => (
                                                 <li key={item} className="flex gap-3">
-                                                    <span className="font-bold text-teal-700">✓</span>
+                                                    <Check className="h-4 w-4 shrink-0 mt-0.5 text-teal-700" aria-hidden="true" />
                                                     <span>{item}</span>
                                                 </li>
                                             ))}
@@ -757,8 +709,8 @@ async function validarPerfil(id: string) {
 
                         {tab === "registros" && (
                             <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                    <h2 className="text-xl font-bold mb-6">Perfiles de persona guardados</h2>
+                                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+                                    <h2 className="text-xl font-bold tracking-tight mb-6">Perfiles de persona guardados</h2>
                                     {perfiles.length === 0 ? (
                                         <p className="text-sm text-slate-400 text-center py-10">
                                             Aún no hay perfiles guardados. Crea el primero desde el formulario.
@@ -768,10 +720,11 @@ async function validarPerfil(id: string) {
                                             {perfiles.map((p) => (
                                                 <div
                                                     key={p.id}
-                                                    className={`rounded-2xl border p-5 shadow-sm space-y-3 ${lienzoSeleccionado?.id === p.id
-                                                        ? "border-teal-600 bg-teal-50/40"
-                                                        : "border-slate-200 bg-white"
-                                                        }`}
+                                                    className={`rounded-2xl border p-5 shadow-sm space-y-3 transition-all duration-200 ${
+                                                        lienzoSeleccionado?.id === p.id
+                                                            ? "border-teal-400/60 bg-gradient-to-r from-teal-50/60 to-emerald-50/60 shadow-md shadow-teal-100/30"
+                                                            : "border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-md hover:shadow-slate-100/50"
+                                                    }`}
                                                 >
                                                     <div className="flex justify-between items-start gap-4">
                                                         <div className="flex items-start gap-3">
@@ -779,13 +732,13 @@ async function validarPerfil(id: string) {
                                                                 <img
                                                                     src={p.foto_url}
                                                                     alt={p.nombre}
-                                                                    className="h-12 w-12 rounded-full border border-slate-200 object-cover"
+                                                                    className="h-12 w-12 rounded-full border-2 border-slate-200 object-cover shadow-sm"
                                                                     onError={(e) => {
                                                                         e.currentTarget.style.display = "none";
                                                                     }}
                                                                 />
                                                             ) : (
-                                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-teal-100 bg-teal-50 text-lg font-bold text-teal-700">
+                                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-teal-100/60 bg-gradient-to-br from-teal-50 to-emerald-50 text-lg font-bold text-teal-700 shadow-sm">
                                                                     {p.nombre?.charAt(0)?.toUpperCase() || "P"}
                                                                 </div>
                                                             )}
@@ -799,7 +752,7 @@ async function validarPerfil(id: string) {
                                                             </div>
                                                         </div>
                                                         <span
-                                                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${estadoClass(
+                                                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide shadow-sm ${estadoClass(
                                                                 p.estado_perfil
                                                             )}`}
                                                         >
@@ -811,25 +764,25 @@ async function validarPerfil(id: string) {
                                                     <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
                                                         <button
                                                             onClick={() => verFicha(p)}
-                                                            className="text-xs font-semibold text-teal-700 hover:text-teal-900 border border-teal-200 px-3 py-1 rounded bg-teal-50"
+                                                            className="text-xs font-semibold text-teal-700 transition-all duration-150 border border-teal-200/60 px-3 py-1 rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 shadow-sm"
                                                         >
                                                             Ver Ficha
                                                         </button>
                                                         <button
                                                             onClick={() => prepararEdicion(p)}
-                                                            className="text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 px-3 py-1 rounded"
+                                                            className="text-xs font-semibold text-slate-600 transition-all duration-150 border border-slate-200/60 px-3 py-1 rounded-lg hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
                                                         >
                                                             Editar
                                                         </button>
                                                         <button
                                                             onClick={() => validarPerfil(p.id)}
-                                                            className="text-xs font-semibold text-green-700 hover:text-green-900 border border-green-200 px-3 py-1 rounded bg-green-50"
+                                                            className="text-xs font-semibold text-green-700 transition-all duration-150 border border-green-200/60 px-3 py-1 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 shadow-sm"
                                                         >
                                                             Validar
                                                         </button>
                                                         <button
                                                             onClick={() => solicitarEliminar(p.id)}
-                                                            className="text-xs font-semibold text-red-600 hover:text-red-900 border border-red-200 px-3 py-1 rounded"
+                                                            className="text-xs font-semibold text-red-600 transition-all duration-150 border border-red-200/60 px-3 py-1 rounded-lg hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
                                                         >
                                                             Eliminar
                                                         </button>
@@ -840,9 +793,9 @@ async function validarPerfil(id: string) {
                                     )}
                                 </div>
                                 <aside className="hidden xl:block">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6 sticky top-6">
-                                        <h3 className="font-bold">Acciones rápidas</h3>
-                                        <p className="mt-2 text-sm text-slate-500">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50 sticky top-6">
+                                        <h3 className="font-bold text-slate-800">Acciones rápidas</h3>
+                                        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
                                             Selecciona "Ver ficha" en un perfil para visualizar su lienzo completo, o
                                             "Validar" para marcarlo como revisado.
                                         </p>
@@ -853,7 +806,7 @@ async function validarPerfil(id: string) {
 
                         {tab === "lienzo" && (
                             <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-8">
+                                <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-md shadow-slate-100/50">
                                     {!lienzoSeleccionado ? (
                                         <p className="text-sm text-slate-500 text-center py-10">
                                             No hay ningún perfil seleccionado. Vuelve a los registros y haz clic en "Ver
@@ -861,24 +814,24 @@ async function validarPerfil(id: string) {
                                         </p>
                                     ) : (
                                         <div className="space-y-8">
-                                            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center sm:justify-between">
                                                 <div className="flex items-center gap-5">
                                                     {lienzoSeleccionado.foto_url ? (
                                                         <img
                                                             src={lienzoSeleccionado.foto_url}
                                                             alt={lienzoSeleccionado.nombre}
-                                                            className="h-24 w-24 rounded-full border border-slate-200 object-cover"
+                                                            className="h-24 w-24 rounded-full border-2 border-slate-200 object-cover shadow-md"
                                                             onError={(e) => {
                                                                 e.currentTarget.style.display = "none";
                                                             }}
                                                         />
                                                     ) : (
-                                                        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-teal-100 bg-teal-50 text-3xl font-bold text-teal-700">
+                                                        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-teal-100/60 bg-gradient-to-br from-teal-50 to-emerald-50 text-3xl font-bold text-teal-700 shadow-md">
                                                             {lienzoSeleccionado.nombre?.charAt(0)?.toUpperCase() || "P"}
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <h2 className="text-3xl font-bold text-slate-900">
+                                                        <h2 className="text-3xl font-bold tracking-tight text-slate-900">
                                                             {lienzoSeleccionado.nombre}
                                                         </h2>
                                                         <p className="text-teal-700 font-medium mt-1">
@@ -887,7 +840,7 @@ async function validarPerfil(id: string) {
                                                     </div>
                                                 </div>
                                                 <span
-                                                    className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide ${estadoClass(
+                                                    className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm ${estadoClass(
                                                         lienzoSeleccionado.estado_perfil
                                                     )}`}
                                                 >
@@ -895,7 +848,7 @@ async function validarPerfil(id: string) {
                                                 </span>
                                             </div>
 
-                                            <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                            <div className="bg-gradient-to-b from-slate-50 to-slate-100/30 p-5 rounded-xl border border-slate-100/80 shadow-sm">
                                                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
                                                     Contexto y Acceso al Servicio
                                                 </h3>
@@ -903,37 +856,37 @@ async function validarPerfil(id: string) {
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-6">
-                                                <div className="bg-white border border-slate-200 p-5 rounded-xl">
+                                                <div className="bg-white border border-slate-200/80 p-5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                                                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
                                                         Datos Demográficos / Digitales
                                                     </h3>
                                                     <ul className="space-y-3">
-                                                        <li className="flex justify-between border-b border-slate-50 pb-2">
+                                                        <li className="flex justify-between border-b border-slate-100 pb-2">
                                                             <span className="text-slate-500 text-sm">Nivel Digital</span>
-                                                            <span className="font-semibold text-sm">
-                                                                📱 {lienzoSeleccionado.nivel_digital}
+                                                            <span className="font-semibold text-sm text-slate-800">
+                                                                <Smartphone className="h-4 w-4 inline mr-1.5 text-slate-400" aria-hidden="true" /> {lienzoSeleccionado.nivel_digital}
                                                             </span>
                                                         </li>
-                                                        <li className="flex justify-between border-b border-slate-50 pb-2">
+                                                        <li className="flex justify-between border-b border-slate-100 pb-2">
                                                             <span className="text-slate-500 text-sm">Canal Preferido</span>
-                                                            <span className="font-semibold text-sm">
-                                                                📞 {lienzoSeleccionado.canales_contacto}
+                                                            <span className="font-semibold text-sm text-slate-800">
+                                                                <Phone className="h-4 w-4 inline mr-1.5 text-slate-400" aria-hidden="true" /> {lienzoSeleccionado.canales_contacto}
                                                             </span>
                                                         </li>
                                                     </ul>
                                                 </div>
-                                                <div className="bg-white border border-slate-200 p-5 rounded-xl">
+                                                <div className="bg-white border border-slate-200/80 p-5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                                                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
                                                         Expectativas Ideales
                                                     </h3>
-                                                    <p className="text-slate-700 text-sm italic">
+                                                    <p className="text-slate-700 text-sm italic leading-relaxed">
                                                         "{lienzoSeleccionado.expectativas || "No se registraron expectativas."}"
                                                     </p>
                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-3 gap-4">
-                                                <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                                                <div className="bg-gradient-to-b from-emerald-50 to-emerald-50/60 border border-emerald-200/60 p-4 rounded-xl shadow-sm">
                                                     <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2">
                                                         Necesidades
                                                     </h3>
@@ -941,7 +894,7 @@ async function validarPerfil(id: string) {
                                                         {lienzoSeleccionado.necesidades_tag || "N/A"}
                                                     </p>
                                                 </div>
-                                                <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                                                <div className="bg-gradient-to-b from-orange-50 to-orange-50/60 border border-orange-200/60 p-4 rounded-xl shadow-sm">
                                                     <h3 className="text-xs font-bold text-orange-800 uppercase tracking-wider mb-2">
                                                         Barreras
                                                     </h3>
@@ -949,7 +902,7 @@ async function validarPerfil(id: string) {
                                                         {lienzoSeleccionado.barreras || "N/A"}
                                                     </p>
                                                 </div>
-                                                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                                                <div className="bg-gradient-to-b from-blue-50 to-blue-50/60 border border-blue-200/60 p-4 rounded-xl shadow-sm">
                                                     <h3 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">
                                                         Motivaciones
                                                     </h3>
@@ -962,13 +915,13 @@ async function validarPerfil(id: string) {
                                     )}
                                 </div>
 
-                                <aside className="space-y-6">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                        <h3 className="font-bold mb-4">Acciones del Lienzo</h3>
+                                <aside className="space-y-5">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                                        <h3 className="font-bold text-slate-800 mb-4">Acciones del Lienzo</h3>
                                         <div className="space-y-3">
                                             <button
                                                 onClick={() => setTab("registros")}
-                                                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
                                             >
                                                 Volver al listado
                                             </button>
@@ -976,13 +929,13 @@ async function validarPerfil(id: string) {
                                                 <>
                                                     <button
                                                         onClick={() => prepararEdicion(lienzoSeleccionado)}
-                                                        className="w-full rounded-xl border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+                                                        className="w-full rounded-xl border border-teal-300/60 px-4 py-2 text-sm font-semibold text-teal-700 transition-all duration-150 hover:border-teal-400 hover:bg-teal-50 hover:shadow-sm"
                                                     >
                                                         Editar Perfil
                                                     </button>
                                                     <button
                                                         onClick={() => validarPerfil(lienzoSeleccionado.id)}
-                                                        className="w-full rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+                                                        className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
                                                     >
                                                         Validar Perfil
                                                     </button>

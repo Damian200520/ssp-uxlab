@@ -270,70 +270,70 @@ async def actualizar_etapa(proyecto_id: str, data: ActualizarEtapaProyecto):
         await conn.close()
 
 # =========================
-# Investigación conectada a Supabase
+# Registro de etapa conectado a Supabase
 # =========================
 
-async def crear_investigacion(data):
+
+async def guardar_registro_etapa(data):
     conn = await get_connection()
 
     try:
-        query = """
-            insert into investigacion (
-                proyecto_id,
-                nombre_servicio,
-                contexto_servicio,
-                objetivo_investigacion,
-                metodologia,
-                documentos_consultados,
-                sugerencia_ia,
-                completado
-            )
-            values (
-                $1::uuid,
-                $2,
-                $3,
-                $4,
-                $5,
-                $6::text[],
-                $7,
-                $8
-            )
+        row = await conn.fetchrow(
+            """
+            insert into registro_etapa (proyecto_id, etapa_id, contenido)
+            values ($1::uuid, $2, $3::jsonb)
+            on conflict (proyecto_id, etapa_id)
+            do update set
+                contenido = $3::jsonb,
+                updated_at = now()
             returning
                 id::text,
                 proyecto_id::text,
-                nombre_servicio,
-                contexto_servicio,
-                objetivo_investigacion,
-                metodologia,
-                documentos_consultados,
-                sugerencia_ia,
-                completado,
+                etapa_id,
+                contenido::text,
                 created_at::text,
                 updated_at::text;
-        """
-
-        row = await conn.fetchrow(
-            query,
+            """,
             data.proyecto_id,
-            data.nombre_servicio,
-            data.contexto_servicio,
-            data.objetivo_investigacion,
-            data.metodologia,
-            data.documentos_consultados,
-            json.dumps(data.aspectos_servicio),
-            json.dumps(data.personas_a_comprender),
-            json.dumps(data.informacion_recolectar),
-            json.dumps(data.tecnicas_investigacion),
-            json.dumps(data.preparativos_logistica),
-            json.dumps(data.preguntas_clave),
-            data.etapa_servicio,
-            data.estado_plan,
+            data.etapa_id,
+            json.dumps(data.contenido),
         )
 
         return dict(row)
 
     finally:
         await conn.close()
+
+
+async def listar_registros_por_proyecto(proyecto_id: str):
+    conn = await get_connection()
+
+    try:
+        rows = await conn.fetch(
+            """
+            select
+                id::text,
+                proyecto_id::text,
+                etapa_id,
+                contenido::text,
+                created_at::text,
+                updated_at::text
+            from registro_etapa
+            where proyecto_id = $1::uuid
+            order by etapa_id asc;
+            """,
+            proyecto_id,
+        )
+
+        return [dict(row) for row in rows]
+
+    finally:
+        await conn.close()
+
+
+# =========================
+# Investigación conectada a Supabase
+# =========================
 
 
 async def obtener_investigacion_por_proyecto(proyecto_id: str):

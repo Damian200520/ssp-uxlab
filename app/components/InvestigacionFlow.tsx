@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Check, X, Square } from "lucide-react";
+import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const PROYECTO_ID =
@@ -106,10 +108,10 @@ function estadoLabel(estado?: string) {
 }
 
 function estadoClass(estado?: string) {
-  if (estado === "listo_revision") return "bg-green-100 text-green-700";
-  if (estado === "en_revision") return "bg-blue-100 text-blue-700";
-  if (estado === "validado") return "bg-teal-100 text-teal-700";
-  return "bg-amber-100 text-amber-700";
+  if (estado === "listo_revision") return "bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200/50";
+  if (estado === "en_revision") return "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200/50";
+  if (estado === "validado") return "bg-gradient-to-r from-teal-50 to-emerald-50 text-teal-700 border border-teal-200/50";
+  return "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/50";
 }
 
 function escapeHtml(value?: string) {
@@ -149,46 +151,51 @@ function ArrayEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h3 className="font-semibold text-slate-900">{title}</h3>
-
-      {description && (
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
-      )}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {values.map((item, index) => (
-          <span
-            key={`${item}-${index}`}
-            className="inline-flex items-center gap-2 rounded-lg bg-teal-50 px-3 py-2 text-sm font-medium text-teal-800"
-          >
-            {item}
-
-            <button
-              type="button"
-              onClick={() => removeValue(index)}
-              className="text-teal-700 hover:text-red-600"
-            >
-              ×
-            </button>
-          </span>
-        ))}
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 flex flex-col gap-3 shadow-sm shadow-slate-100/50 hover:shadow-md hover:shadow-slate-100/50 transition-all duration-200">
+      <div>
+        <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+        {description && (
+          <p className="mt-0.5 text-xs text-slate-400 leading-relaxed">{description}</p>
+        )}
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+      {values.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {values.map((item, index) => (
+            <span
+              key={`${item}-${index}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-2.5 py-1 text-xs font-medium text-teal-800 shadow-sm"
+            >
+              {item}
+              <button
+                type="button"
+                onClick={() => removeValue(index)}
+                className="opacity-50 hover:opacity-100 hover:text-red-600 transition-all"
+                aria-label="Eliminar elemento"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400 italic">Sin elementos aún.</p>
+      )}
+
+      <div className="flex gap-2 pt-1 border-t border-slate-100">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValue(); } }}
           placeholder={placeholder}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+          className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
         />
-
         <button
           type="button"
           onClick={addValue}
-          className="rounded-xl border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+          className="rounded-xl border border-teal-300/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition-all duration-150 hover:from-teal-100 hover:to-emerald-100 hover:shadow-sm shadow-sm"
         >
-          Agregar
+          + Agregar
         </button>
       </div>
     </div>
@@ -631,12 +638,12 @@ export default function InvestigacionFlow({
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
       <div className="flex">
-        <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
-          <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
+        <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+          <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
 
-          <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
+          <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
             {(
                 [
                     ["← Volver al Catálogo", null, false],
@@ -653,8 +660,8 @@ export default function InvestigacionFlow({
                 <button
                     key={label}
                     onClick={() => onNavigate && onNavigate(route)}
-                    className={`w-full text-left rounded-xl px-3 py-3 ${
-                        active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
+                    className={`w-full text-left rounded-xl px-3 py-3 transition-all duration-150 ${
+                        active ? "bg-gradient-to-r from-teal-50 to-emerald-50 font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
                     }`}
                 >
                     {label}
@@ -664,16 +671,16 @@ export default function InvestigacionFlow({
         </aside>
 
         <section className="w-full">
-          <header className="border-b border-slate-200 bg-white px-6 py-4">
+          <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm">
+                <div className="inline-flex rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm shadow-sm">
                   Propósito 1 · Diseñar servicios centrados en las personas
                 </div>
 
-                <h1 className="mt-6 text-4xl font-bold">Investigación</h1>
+                <h1 className="mt-6 text-4xl font-bold tracking-tight">Investigación</h1>
 
-                <p className="mt-1 text-slate-500">
+                <p className="mt-1 text-slate-500 leading-relaxed">
                   Diseñar y ejecutar investigación de las personas usuarias del
                   servicio para planificar decisiones basadas en evidencia
                   directa.
@@ -683,7 +690,7 @@ export default function InvestigacionFlow({
           </header>
 
           <div className="px-6 py-6">
-            <div className="mb-6 flex gap-6 border-b border-slate-200">
+            <div className="mb-6 flex gap-6 border-b border-slate-200/80">
               {[
                 ["formulario", "Formulario"],
                 ["registros", "Registros guardados"],
@@ -693,10 +700,10 @@ export default function InvestigacionFlow({
                   key={key}
                   type="button"
                   onClick={() => setTab(key as typeof tab)}
-                  className={`border-b-2 px-2 pb-3 text-sm font-semibold ${
+                  className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${
                     tab === key
                       ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   {label}
@@ -704,8 +711,10 @@ export default function InvestigacionFlow({
               ))}
             </div>
 
+            <AsistenciaIAEtapa etapa={1} contexto="Investigación" />
+
             {message && (
-              <div className="mb-4 rounded-xl border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+              <div className="mb-4 rounded-xl border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-3 text-sm text-teal-800 shadow-sm">
                 {message}
               </div>
             )}
@@ -713,8 +722,8 @@ export default function InvestigacionFlow({
             {tab === "formulario" && (
               <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
                 <div className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h2 className="text-xl font-bold">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+                    <h2 className="text-xl font-bold tracking-tight">
                       Herramienta: Plan de investigación de experiencia usuaria
                     </h2>
 
@@ -726,14 +735,14 @@ export default function InvestigacionFlow({
                       informadas y mejorar el servicio.
                     </p>
 
-                    <span className="mt-4 inline-flex rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
+                    <span className="mt-4 inline-flex rounded-xl border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-2 text-sm font-semibold text-teal-700 shadow-sm">
                       Guía UXLab · págs. 110–111
                     </span>
                   </div>
 
                   <div className="grid gap-6 lg:grid-cols-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                      <label className="font-semibold">Nombre del servicio</label>
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                      <label className="font-semibold text-slate-700">Nombre del servicio</label>
 
                       <input
                         value={form.nombre_servicio}
@@ -741,10 +750,10 @@ export default function InvestigacionFlow({
                           updateField("nombre_servicio", e.target.value)
                         }
                         placeholder="Escribe el nombre del servicio"
-                        className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                        className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                       />
 
-                      <label className="mt-5 block font-semibold">
+                      <label className="mt-5 block font-semibold text-slate-700">
                         Contexto del servicio
                       </label>
 
@@ -754,12 +763,12 @@ export default function InvestigacionFlow({
                           updateField("contexto_servicio", e.target.value)
                         }
                         placeholder="Describe brevemente el contexto del servicio"
-                        className="mt-3 min-h-28 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                        className="mt-3 min-h-28 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                       />
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                      <label className="font-semibold">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                      <label className="font-semibold text-slate-700">
                         Objetivo de investigación
                       </label>
 
@@ -773,7 +782,7 @@ export default function InvestigacionFlow({
                           updateField("objetivo_investigacion", e.target.value)
                         }
                         placeholder="Ej.: Comprender cómo las personas mayores utilizan el servicio para identificar barreras y oportunidades de mejora."
-                        className="mt-3 min-h-36 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                        className="mt-3 min-h-36 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                       />
                     </div>
                   </div>
@@ -788,7 +797,7 @@ export default function InvestigacionFlow({
                     />
 
                     <ArrayEditor
-                      title="Personas usuarias que necesita comprender"
+                      title="Personas usuarias a comprender"
                       description="Defínelas en función de su relación con el servicio o perfiles específicos."
                       values={form.personas_a_comprender}
                       placeholder="Agregar grupo o perfil"
@@ -796,7 +805,7 @@ export default function InvestigacionFlow({
                     />
 
                     <ArrayEditor
-                      title="Información que necesita recolectar"
+                      title="Información a recolectar"
                       description="Define qué información es clave para responder las preguntas de investigación."
                       values={form.informacion_recolectar}
                       placeholder="Agregar información"
@@ -830,7 +839,7 @@ export default function InvestigacionFlow({
                     />
                   </div>
 
-                  <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-slate-600">
                       Este plan puede ser revisado y validado más adelante con el
                       equipo antes de su ejecución.
@@ -841,7 +850,7 @@ export default function InvestigacionFlow({
                         type="button"
                         onClick={guardarInvestigacion}
                         disabled={loading}
-                        className="rounded-xl border border-teal-600 px-5 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+                        className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md disabled:opacity-50"
                       >
                         {loading
                           ? "Guardando..."
@@ -856,7 +865,7 @@ export default function InvestigacionFlow({
                           setForm(createInitialForm());
                           setEditingId(null);
                         }}
-                        className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
                       >
                         Limpiar
                       </button>
@@ -864,7 +873,7 @@ export default function InvestigacionFlow({
                       <button
                         type="button"
                         onClick={() => setTab("lienzo")}
-                        className="rounded-xl border border-teal-600 px-5 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+                        className="rounded-xl border border-teal-300/60 px-5 py-2 text-sm font-semibold text-teal-700 transition-all duration-150 hover:border-teal-400 hover:bg-teal-50 hover:shadow-sm"
                       >
                         Vista previa del plan
                       </button>
@@ -872,38 +881,20 @@ export default function InvestigacionFlow({
                   </div>
                 </div>
 
-                <aside className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h3 className="font-bold">Asistencia metodológica</h3>
-
-                    <p className="mt-4 font-semibold">UXLab AI</p>
-
-                    <p className="mt-2 text-sm text-slate-500">
-                      Recibe sugerencias personalizadas para fortalecer tu plan de
-                      investigación.
-                    </p>
-
-                    <button
-                      type="button"
-                      className="mt-4 w-full rounded-xl border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
-                    >
-                      Mostrar sugerencia
-                    </button>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h3 className="font-bold">
-                      Checklist de cambios implementados
+                <aside className="space-y-5">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                    <h3 className="font-bold text-slate-800">
+                      Lista de verificación de cambios implementados
                     </h3>
 
                     <ul className="mt-4 space-y-3 text-sm text-slate-700">
                       {[
-                        "Bajadas y descriptores incorporados",
+                        "Hallazgos y descriptores incorporados",
                         "Personas usuarias por relación/perfiles",
                         "Campo múltiple para motivaciones y barreras",
                         "Objetivo reubicado correctamente",
                         "Técnicas y preparativos separados",
-                        "Acciones Guardar / Editar / Eliminar",
+                        "Acciones guardar / editar / eliminar",
                       ].map((item) => (
                         <li key={item} className="flex gap-3">
                           <span className="font-bold text-teal-700">✓</span>
@@ -918,9 +909,9 @@ export default function InvestigacionFlow({
 
             {tab === "registros" && (
               <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-xl font-bold">
+                    <h2 className="text-xl font-bold tracking-tight">
                       Planes de investigación guardados
                     </h2>
 
@@ -931,7 +922,7 @@ export default function InvestigacionFlow({
                         setForm(createInitialForm());
                         setTab("formulario");
                       }}
-                      className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+                      className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
                     >
                       + Nuevo plan de investigación
                     </button>
@@ -939,7 +930,7 @@ export default function InvestigacionFlow({
 
                   <div className="mt-6 space-y-4">
                     {investigaciones.length === 0 && (
-                      <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                      <p className="rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 p-4 text-sm text-slate-500 border border-slate-200/60">
                         Aún no hay planes de investigación guardados.
                       </p>
                     )}
@@ -947,15 +938,15 @@ export default function InvestigacionFlow({
                     {investigaciones.map((item) => (
                       <div
                         key={item.id}
-                        className={`rounded-2xl border p-5 ${
+                        className={`rounded-2xl border p-5 transition-all duration-200 ${
                           selected?.id === item.id
-                            ? "border-teal-600 bg-teal-50/40"
-                            : "border-slate-200"
+                            ? "border-teal-400/60 bg-gradient-to-r from-teal-50/60 to-emerald-50/60 shadow-md shadow-teal-100/30"
+                            : "border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-md hover:shadow-slate-100/50"
                         }`}
                       >
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                           <div>
-                            <h3 className="font-bold">{item.nombre_servicio}</h3>
+                            <h3 className="font-bold text-slate-800">{item.nombre_servicio}</h3>
 
                             <p className="text-sm text-slate-500">
                               {item.contexto_servicio ||
@@ -968,7 +959,7 @@ export default function InvestigacionFlow({
                                 .map((persona) => (
                                   <span
                                     key={persona}
-                                    className="rounded-lg bg-teal-50 px-2 py-1 text-xs font-semibold text-teal-700"
+                                    className="rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-2 py-1 text-xs font-semibold text-teal-700 border border-teal-200/50 shadow-sm"
                                   >
                                     {persona}
                                   </span>
@@ -977,7 +968,7 @@ export default function InvestigacionFlow({
                           </div>
 
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${estadoClass(
+                            className={`rounded-full px-3 py-1 text-xs font-bold shadow-sm ${estadoClass(
                               item.estado_plan
                             )}`}
                           >
@@ -991,7 +982,7 @@ export default function InvestigacionFlow({
                             onClick={() =>
                               seleccionarInvestigacion(item.id, false)
                             }
-                            className="font-semibold text-teal-700"
+                            className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
                           >
                             Ver
                           </button>
@@ -999,7 +990,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => editarInvestigacion(item.id)}
-                            className="font-semibold text-teal-700"
+                            className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
                           >
                             Editar
                           </button>
@@ -1007,7 +998,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => eliminarInvestigacion(item.id)}
-                            className="font-semibold text-red-600"
+                            className="font-semibold text-red-600 transition-all duration-150 hover:text-red-700 hover:underline underline-offset-2"
                           >
                             Eliminar
                           </button>
@@ -1015,7 +1006,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => validarInvestigacion(item.id)}
-                            className="font-semibold text-teal-700"
+                            className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
                           >
                             Validar plan
                           </button>
@@ -1025,7 +1016,7 @@ export default function InvestigacionFlow({
                             onClick={() =>
                               seleccionarInvestigacion(item.id, true)
                             }
-                            className="font-semibold text-teal-700"
+                            className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
                           >
                             Ver lienzo
                           </button>
@@ -1035,9 +1026,9 @@ export default function InvestigacionFlow({
                   </div>
                 </div>
 
-                <aside className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h2 className="text-lg font-bold">
+                <aside className="space-y-5">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                    <h2 className="text-lg font-bold tracking-tight">
                       Detalle del plan seleccionado
                     </h2>
 
@@ -1048,12 +1039,12 @@ export default function InvestigacionFlow({
                     ) : (
                       <div className="mt-5 space-y-5">
                         <div>
-                          <h3 className="font-bold">
+                          <h3 className="font-bold text-slate-800">
                             {selected.nombre_servicio}
                           </h3>
 
                           <span
-                            className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-bold ${estadoClass(
+                            className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-bold shadow-sm ${estadoClass(
                               selected.estado_plan
                             )}`}
                           >
@@ -1062,18 +1053,18 @@ export default function InvestigacionFlow({
                         </div>
 
                         <div>
-                          <p className="text-sm font-semibold">
+                          <p className="text-sm font-semibold text-slate-700">
                             Objetivo de investigación
                           </p>
 
-                          <p className="mt-1 text-sm text-slate-600">
+                          <p className="mt-1 text-sm text-slate-600 leading-relaxed">
                             {selected.objetivo_investigacion ||
                               "Sin objetivo registrado."}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-sm font-semibold">
+                          <p className="text-sm font-semibold text-slate-700">
                             Personas a comprender
                           </p>
 
@@ -1082,7 +1073,7 @@ export default function InvestigacionFlow({
                               (item) => (
                                 <span
                                   key={item}
-                                  className="rounded-lg bg-teal-50 px-2 py-1 text-xs font-semibold text-teal-700"
+                                  className="rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-2 py-1 text-xs font-semibold text-teal-700 border border-teal-200/50 shadow-sm"
                                 >
                                   {item}
                                 </span>
@@ -1092,11 +1083,11 @@ export default function InvestigacionFlow({
                         </div>
 
                         <div>
-                          <p className="text-sm font-semibold">
+                          <p className="text-sm font-semibold text-slate-700">
                             Técnicas de investigación
                           </p>
 
-                          <p className="mt-1 text-sm text-slate-600">
+                          <p className="mt-1 text-sm text-slate-600 leading-relaxed">
                             {(selected.tecnicas_investigacion || []).join(", ")}
                           </p>
                         </div>
@@ -1105,7 +1096,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => editarInvestigacion(selected.id)}
-                            className="rounded-xl border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700"
+                            className="rounded-xl border border-teal-300/60 px-4 py-2 text-sm font-semibold text-teal-700 transition-all duration-150 hover:border-teal-400 hover:bg-teal-50 hover:shadow-sm"
                           >
                             Editar registro
                           </button>
@@ -1113,7 +1104,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => eliminarInvestigacion(selected.id)}
-                            className="rounded-xl border border-red-500 px-4 py-2 text-sm font-semibold text-red-600"
+                            className="rounded-xl border border-red-300/60 px-4 py-2 text-sm font-semibold text-red-600 transition-all duration-150 hover:border-red-400 hover:bg-red-50 hover:shadow-sm"
                           >
                             Eliminar
                           </button>
@@ -1121,7 +1112,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => validarInvestigacion(selected.id)}
-                            className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white"
+                            className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
                           >
                             Aceptar y validar plan
                           </button>
@@ -1130,18 +1121,18 @@ export default function InvestigacionFlow({
                     )}
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h3 className="font-bold">
-                      Checklist de cambios implementados
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                    <h3 className="font-bold text-slate-800">
+                      Lista de verificación de cambios implementados
                     </h3>
 
                     <ul className="mt-4 space-y-3 text-sm text-slate-700">
                       {[
                         "Listado de registros cargados",
-                        "Acciones Ver / Editar / Eliminar",
+                        "Acciones ver / editar / eliminar",
                         "Revisión y validación del plan",
                         "Resumen de la información ingresada",
-                        "Diseño pensado para vista responsiva",
+                        "Diseño pensado para vista adaptable",
                       ].map((item) => (
                         <li key={item} className="flex gap-3">
                           <span className="font-bold text-teal-700">✓</span>
@@ -1156,7 +1147,7 @@ export default function InvestigacionFlow({
 
             {tab === "lienzo" && (
               <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                   {!lienzo ? (
                     <p className="text-sm text-slate-500">
                       No hay datos para generar el lienzo.
@@ -1165,7 +1156,7 @@ export default function InvestigacionFlow({
                     <>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <h2 className="text-2xl font-bold">
+                          <h2 className="text-2xl font-bold tracking-tight">
                             Lienzo final del plan de investigación
                           </h2>
 
@@ -1174,18 +1165,18 @@ export default function InvestigacionFlow({
                           </p>
                         </div>
 
-                        <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700">
+                        <span className="rounded-full bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1 text-sm font-bold text-green-700 border border-green-200/50 shadow-sm">
                           Listo para revisión y validación
                         </span>
                       </div>
 
                       <div className="mt-6 grid gap-5 lg:grid-cols-3">
-                        <div className="rounded-2xl border border-slate-200 p-5">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                           <h3 className="font-bold text-teal-700">
                             1. Servicio
                           </h3>
 
-                          <p className="mt-3 text-sm font-semibold">
+                          <p className="mt-3 text-sm font-semibold text-slate-700">
                             Nombre del servicio
                           </p>
 
@@ -1193,7 +1184,7 @@ export default function InvestigacionFlow({
                             {lienzo.nombre_servicio}
                           </p>
 
-                          <p className="mt-3 text-sm font-semibold">
+                          <p className="mt-3 text-sm font-semibold text-slate-700">
                             Descripción breve
                           </p>
 
@@ -1202,26 +1193,26 @@ export default function InvestigacionFlow({
                               "Sin contexto registrado."}
                           </p>
 
-                          <p className="mt-3 text-sm font-semibold">
+                          <p className="mt-3 text-sm font-semibold text-slate-700">
                             Etapa del servicio
                           </p>
 
-                          <span className="mt-2 inline-flex rounded-lg bg-teal-50 px-2 py-1 text-xs font-semibold text-teal-700">
+                          <span className="mt-2 inline-flex rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-2 py-1 text-xs font-semibold text-teal-700 border border-teal-200/50 shadow-sm">
                             {lienzo.etapa_servicio || "Descubrimiento"}
                           </span>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 p-5">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                           <h3 className="font-bold text-teal-700">
                             2. Foco / objetivo
                           </h3>
 
-                          <p className="mt-3 text-sm text-slate-600">
+                          <p className="mt-3 text-sm text-slate-600 leading-relaxed">
                             {lienzo.objetivo_investigacion ||
                               "Sin objetivo registrado."}
                           </p>
 
-                          <p className="mt-4 text-sm font-semibold">
+                          <p className="mt-4 text-sm font-semibold text-slate-700">
                             Preguntas clave
                           </p>
 
@@ -1232,7 +1223,7 @@ export default function InvestigacionFlow({
                           </ul>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 p-5">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                           <h3 className="font-bold text-teal-700">
                             3. Personas usuarias
                           </h3>
@@ -1242,7 +1233,7 @@ export default function InvestigacionFlow({
                               (item) => (
                                 <span
                                   key={item}
-                                  className="rounded-lg bg-teal-50 px-2 py-1 text-xs font-semibold text-teal-700"
+                                  className="rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-2 py-1 text-xs font-semibold text-teal-700 border border-teal-200/50 shadow-sm"
                                 >
                                   {item}
                                 </span>
@@ -1251,19 +1242,19 @@ export default function InvestigacionFlow({
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 p-5">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                           <h3 className="font-bold text-teal-700">
                             4. Aspectos a investigar
                           </h3>
 
                           <ul className="mt-3 space-y-2 text-sm text-slate-600">
                             {(lienzo.aspectos_servicio || []).map((item) => (
-                              <li key={item}>✓ {item}</li>
+                              <li key={item}><Check className="h-4 w-4 shrink-0 inline mr-1.5 text-teal-700" aria-hidden="true" />{item}</li>
                             ))}
                           </ul>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 p-5">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                           <h3 className="font-bold text-teal-700">
                             5. Información a recolectar
                           </h3>
@@ -1271,13 +1262,13 @@ export default function InvestigacionFlow({
                           <ul className="mt-3 space-y-2 text-sm text-slate-600">
                             {(lienzo.informacion_recolectar || []).map(
                               (item) => (
-                                <li key={item}>✓ {item}</li>
+                                <li key={item}><Check className="h-4 w-4 shrink-0 inline mr-1.5 text-teal-700" aria-hidden="true" />{item}</li>
                               )
                             )}
                           </ul>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 p-5">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                           <h3 className="font-bold text-teal-700">
                             6. Técnicas
                           </h3>
@@ -1285,21 +1276,21 @@ export default function InvestigacionFlow({
                           <ul className="mt-3 space-y-2 text-sm text-slate-600">
                             {(lienzo.tecnicas_investigacion || []).map(
                               (item) => (
-                                <li key={item}>✓ {item}</li>
+                                <li key={item}><Check className="h-4 w-4 shrink-0 inline mr-1.5 text-teal-700" aria-hidden="true" />{item}</li>
                               )
                             )}
                           </ul>
                         </div>
                       </div>
 
-                      <div className="mt-5 rounded-2xl border border-slate-200 p-5">
+                      <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                         <h3 className="font-bold text-teal-700">
                           7. Preparativos y logística
                         </h3>
 
                         <ul className="mt-3 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
                           {(lienzo.preparativos_logistica || []).map((item) => (
-                            <li key={item}>□ {item}</li>
+                            <li key={item}><Square className="h-4 w-4 shrink-0 inline mr-1.5 text-slate-400" aria-hidden="true" />{item}</li>
                           ))}
                         </ul>
                       </div>
@@ -1307,9 +1298,9 @@ export default function InvestigacionFlow({
                   )}
                 </div>
 
-                <aside className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h3 className="font-bold">Acciones</h3>
+                <aside className="space-y-5">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                    <h3 className="font-bold text-slate-800">Acciones</h3>
 
                     <div className="mt-4 space-y-3">
                       {lienzo && (
@@ -1317,7 +1308,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => editarInvestigacion(lienzo.id)}
-                            className="w-full rounded-xl border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700"
+                            className="w-full rounded-xl border border-teal-300/60 px-4 py-2 text-sm font-semibold text-teal-700 transition-all duration-150 hover:border-teal-400 hover:bg-teal-50 hover:shadow-sm"
                           >
                             Editar plan
                           </button>
@@ -1325,7 +1316,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={descargarLienzoPDF}
-                            className="w-full rounded-xl border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700"
+                            className="w-full rounded-xl border border-teal-300/60 px-4 py-2 text-sm font-semibold text-teal-700 transition-all duration-150 hover:border-teal-400 hover:bg-teal-50 hover:shadow-sm"
                           >
                             Descargar PDF
                           </button>
@@ -1333,7 +1324,7 @@ export default function InvestigacionFlow({
                           <button
                             type="button"
                             onClick={() => validarInvestigacion(lienzo.id)}
-                            className="w-full rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white"
+                            className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
                           >
                             Validar plan
                           </button>
@@ -1342,9 +1333,9 @@ export default function InvestigacionFlow({
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                    <h3 className="font-bold">
-                      Checklist de cambios implementados
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                    <h3 className="font-bold text-slate-800">
+                      Lista de verificación de cambios implementados
                     </h3>
 
                     <ul className="mt-4 space-y-3 text-sm text-slate-700">
@@ -1357,15 +1348,17 @@ export default function InvestigacionFlow({
                         "Enfoque alineado con la guía UXLab",
                       ].map((item) => (
                         <li key={item} className="flex gap-3">
-                          <span className="font-bold text-teal-700">✓</span>
+                          <Check className="h-4 w-4 shrink-0 mt-0.5 text-teal-700" aria-hidden="true" />
                           <span>{item}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </aside>
+
               </div>
             )}
+
           </div>
         </section>
       </div>

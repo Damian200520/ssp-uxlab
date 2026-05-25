@@ -151,4 +151,20 @@ class InvestigacionUpdate(BaseModel):
     etapa_servicio: Optional[str] = None
     estado_plan: Optional[str] = None
     sugerencia_ia: Optional[str] = None
-    completado: Optional[bool] = None
+
+
+class IASintesisRequest(BaseModel):
+    proyecto_id: str
+    etapa: int | None = None
+    evidencias: list[dict] = []
+
+
+class IASugerenciaRequest(BaseModel):
+    etapa: int
+    contexto: str
+    datos_etapa: dict = {}
+
+
+class IAMejoraRedaccionRequest(BaseModel):
+    texto: str
+    tono: str = "formal y claro"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
 import { supabase } from "./supabaseClient";
 
 const NIVELES = ["Bajo", "Medio", "Alto"] as const;
@@ -205,8 +206,8 @@ function estadoHabilitacionLabel(estado?: string) {
 
 function estadoHabilitacionClass(estado?: string) {
   return estado === "validado"
-    ? "bg-green-100 text-green-700"
-    : "bg-amber-100 text-amber-700";
+    ? "bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200/50"
+    : "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/50";
 }
 
 function estadoLabel(cumplimiento?: string) {
@@ -216,10 +217,10 @@ function estadoLabel(cumplimiento?: string) {
 }
 
 function estadoClass(cumplimiento?: string) {
-  if (cumplimiento === "Cumplido") return "bg-green-100 text-green-700";
+  if (cumplimiento === "Cumplido") return "bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200/50";
   if (cumplimiento === "Parcialmente cumplido")
-    return "bg-blue-100 text-blue-700";
-  return "bg-amber-100 text-amber-700";
+    return "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200/50";
+  return "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/50";
 }
 
 export default function HabilitacionFlow({
@@ -452,7 +453,7 @@ export default function HabilitacionFlow({
       });
 
       setTab("expectativas");
-      setMessage(`Editando expectativa`);
+      setMessage(`Editando la expectativa`);
     } catch (error) {
       console.error("Error al cargar expectativa para editar:", error);
       setMessage("No se pudo cargar la expectativa para editar.");
@@ -624,7 +625,7 @@ export default function HabilitacionFlow({
     if (perfil) seleccionarPerfil(perfil);
     cargarFormularioHabilitacion(hab);
     setTab("habilitacion");
-    setMessage("Editando habilitación");
+    setMessage("Editando la habilitación");
   }
 
   async function eliminarHabilitacion(id: string) {
@@ -696,11 +697,11 @@ window.dispatchEvent(
     }
   }
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
       <div className="flex">
-        <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
-          <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
-          <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
+        <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+          <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
+          <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
             {(
               [
                 ["← Volver al Catálogo", null, false],
@@ -717,8 +718,8 @@ window.dispatchEvent(
               <button
                 key={label}
                 onClick={() => onNavigate && onNavigate(route)}
-                className={`w-full text-left rounded-xl px-3 py-3 ${
-                  active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
+                className={`w-full text-left rounded-xl px-3 py-3 transition-all duration-150 ${
+                  active ? "bg-gradient-to-r from-teal-50 to-emerald-50 font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
                 }`}
               >
                 {label}
@@ -728,29 +729,29 @@ window.dispatchEvent(
         </aside>
 
         <section className="w-full">
-          <header className="border-b border-slate-200 bg-white px-6 py-4">
+          <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm">
+                <div className="inline-flex rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm shadow-sm">
                   Propósito 1 · Diseñar servicios centrados en las personas
                 </div>
 
-                <h1 className="mt-6 text-4xl font-bold">
+                <h1 className="mt-6 text-4xl font-bold tracking-tight">
                   Habilitación y Expectativas
                 </h1>
 
-                <p className="mt-1 text-slate-500">
+                <p className="mt-1 text-slate-500 leading-relaxed">
                   (Guía UXLab págs. 102-103) Detecta niveles de habilitación y expectativas de las personas
-                  usuarias del servicio para asegurar una experiencia alineada a
-                  sus capacidades y necesidades, identificando barreras y facilitadores clave.
+                  usuarias del servicio. Asegura una experiencia alineada con
+                  sus capacidades y necesidades, e identifica barreras y facilitadores clave.
                 </p>
               </div>
             </div>
           </header>
 
           <div className="px-6 py-4">
-            <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
-              <label className="font-semibold text-lg">
+            <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-md shadow-slate-100/50">
+              <label className="font-semibold text-lg text-slate-800">
                 Perfil de persona usuaria
               </label>
               <p className="mt-1 text-sm text-slate-500">
@@ -758,7 +759,7 @@ window.dispatchEvent(
               </p>
               <select
                 aria-label="Selecciona un perfil de usuario"
-                className="mt-3 w-full max-w-md rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                className="mt-3 w-full max-w-md rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                 value={perfilSeleccionado?.id || ""}
                 onChange={(e) => {
                   const perfil = personasUsuarias.find((p) => p.id === e.target.value);
@@ -773,7 +774,7 @@ window.dispatchEvent(
                 ))}
               </select>
               {perfilSeleccionado && (
-                <div className="mt-4 rounded-lg bg-teal-50 p-4">
+                <div className="mt-4 rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 p-4 border border-teal-100/60 shadow-sm">
                   <p className="text-sm font-semibold text-teal-900">
                     {perfilSeleccionado.nombre_arquetipo}
                   </p>
@@ -784,20 +785,20 @@ window.dispatchEvent(
               )}
             </div>
 
-            <div className="mb-6 flex gap-4 border-b border-slate-200">
+            <div className="mb-6 flex gap-4 border-b border-slate-200/80">
               {[
                 ["habilitacion", "Habilitación"],
                 ["expectativas", "Expectativas"],
-                ["registros", "Registros Guardados"],
+                ["registros", "Registros guardados"],
                 ["lienzo", "Vista de lienzo"],
               ].map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setTab(key as typeof tab)}
-                  className={`border-b-2 px-2 pb-3 text-sm font-semibold ${tab === key
+                  className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${tab === key
                       ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
                     }`}
                 >
                   {label}
@@ -806,21 +807,23 @@ window.dispatchEvent(
             </div>
 
             {message && (
-              <div className="mb-4 rounded-xl border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+              <div className="mb-4 rounded-xl border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-3 text-sm text-teal-800 shadow-sm">
                 {message}
               </div>
             )}
 
+            <AsistenciaIAEtapa etapa={3} contexto="Habilitación y Expectativas" />
+
             {tab === "habilitacion" && (
               <div className="space-y-6">
                 {!perfilSeleccionado ? (
-                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                  <p className="rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 p-4 text-sm text-slate-500 border border-slate-200/60">
                     Selecciona un perfil arriba para registrar su habilitación.
                   </p>
                 ) : (
                   <>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <h2 className="text-lg font-bold">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-md shadow-slate-100/50">
+                      <h2 className="text-lg font-bold tracking-tight text-slate-800">
                         Habilitación · {perfilSeleccionado.nombre_arquetipo}
                       </h2>
                       <p className="mt-1 text-sm text-slate-500">
@@ -838,16 +841,16 @@ window.dispatchEvent(
                       ).map(([field, label]) => (
                         <div
                           key={field}
-                          className="rounded-2xl border border-slate-200 bg-white p-4"
+                          className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200"
                         >
-                          <label className="font-semibold">{label}</label>
+                          <label className="font-semibold text-slate-700">{label}</label>
                           <select
                             aria-label={label}
                             value={habilitacionForm[field]}
                             onChange={(e) =>
                               updateHabilitacionField(field, e.target.value)
                             }
-                            className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                            className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                           >
                             <option value="">Selecciona...</option>
                             {NIVELES.map((n) => (
@@ -860,8 +863,8 @@ window.dispatchEvent(
                       ))}
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <label className="font-semibold">Descripción de habilitación</label>
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                      <label className="font-semibold text-slate-700">Descripción de habilitación</label>
                       <textarea
                         value={habilitacionForm.descripcion_habilitacion}
                         onChange={(e) =>
@@ -871,13 +874,13 @@ window.dispatchEvent(
                           )
                         }
                         placeholder="Describe la habilitación detectada para este perfil"
-                        className="mt-3 min-h-24 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                        className="mt-3 min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                       />
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                        <label className="font-semibold">Barreras detectadas</label>
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                        <label className="font-semibold text-slate-700">Barreras detectadas</label>
                         <textarea
                           value={habilitacionForm.barreras_detectadas}
                           onChange={(e) =>
@@ -887,29 +890,29 @@ window.dispatchEvent(
                             )
                           }
                           placeholder="Ej.: dificultad con canales digitales"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                        <label className="font-semibold">Facilitadores</label>
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                        <label className="font-semibold text-slate-700">Facilitadores</label>
                         <textarea
                           value={habilitacionForm.facilitadores}
                           onChange={(e) =>
                             updateHabilitacionField("facilitadores", e.target.value)
                           }
                           placeholder="Ej.: apoyo presencial, material simple"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
-                        <label className="font-semibold">Observaciones</label>
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200 lg:col-span-2">
+                        <label className="font-semibold text-slate-700">Observaciones</label>
                         <textarea
                           value={habilitacionForm.observaciones}
                           onChange={(e) =>
                             updateHabilitacionField("observaciones", e.target.value)
                           }
                           placeholder="Notas adicionales sobre la habilitación del perfil"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
                     </div>
@@ -919,7 +922,7 @@ window.dispatchEvent(
                         type="button"
                         onClick={guardarHabilitacion}
                         disabled={loading}
-                        className="rounded-xl border border-teal-600 px-5 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+                        className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md disabled:opacity-50"
                       >
                         {loading
                           ? "Guardando..."
@@ -930,14 +933,14 @@ window.dispatchEvent(
                       <button
                         type="button"
                         onClick={() => cargarFormularioHabilitacion(habilitacionDelPerfil)}
-                        className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
                       >
                         Limpiar
                       </button>
                       <button
                         type="button"
                         onClick={() => setTab("expectativas")}
-                        className="rounded-xl border border-teal-600 px-5 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+                        className="rounded-xl border border-teal-300/60 px-5 py-2 text-sm font-semibold text-teal-700 transition-all duration-150 hover:border-teal-400 hover:bg-teal-50 hover:shadow-sm"
                       >
                         Ir a expectativas
                       </button>
@@ -950,8 +953,8 @@ window.dispatchEvent(
             {tab === "expectativas" && (
               <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
                 <div className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <h2 className="text-lg font-bold">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-md shadow-slate-100/50">
+                    <h2 className="text-lg font-bold tracking-tight text-slate-800">
                       Herramienta: Expectativas por Perfil
                     </h2>
 
@@ -961,15 +964,15 @@ window.dispatchEvent(
                       expectativas.
                     </p>
 
-                    <span className="mt-4 inline-flex rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
+                    <span className="mt-4 inline-flex rounded-xl border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-2 text-sm font-semibold text-teal-700 shadow-sm">
                       Guía UXLab · págs. 102–103
                     </span>
                   </div>
 
                   {perfilSeleccionado && (
                     <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                        <label className="font-semibold">
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                        <label className="font-semibold text-slate-700">
                           Expectativa principal
                         </label>
 
@@ -982,12 +985,12 @@ window.dispatchEvent(
                             )
                           }
                           placeholder="¿Qué espera esta persona del servicio?"
-                          className="mt-3 min-h-16 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-16 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
 
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                        <label className="font-semibold">
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                        <label className="font-semibold text-slate-700">
                           Nivel de cumplimiento
                         </label>
 
@@ -1000,7 +1003,7 @@ window.dispatchEvent(
                               e.target.value
                             )
                           }
-                          className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         >
                           <option>No cumplido</option>
                           <option>Parcialmente cumplido</option>
@@ -1008,8 +1011,8 @@ window.dispatchEvent(
                         </select>
                       </div>
 
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                        <label className="font-semibold">
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                        <label className="font-semibold text-slate-700">
                           Resultado esperado
                         </label>
 
@@ -1022,12 +1025,12 @@ window.dispatchEvent(
                             )
                           }
                           placeholder="¿Cuál es el resultado esperado?"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
 
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                        <label className="font-semibold">
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
+                        <label className="font-semibold text-slate-700">
                           Indicador de éxito
                         </label>
 
@@ -1040,12 +1043,12 @@ window.dispatchEvent(
                             )
                           }
                           placeholder="¿Cómo medirás el éxito?"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
 
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
-                        <label className="font-semibold">
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200 lg:col-span-2">
+                        <label className="font-semibold text-slate-700">
                           Línea de acción
                         </label>
 
@@ -1055,26 +1058,26 @@ window.dispatchEvent(
                             updateExpectativaField("linea_accion", e.target.value)
                           }
                           placeholder="¿Qué acciones se tomarán para cumplir?"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
 
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
-                        <label className="font-semibold">Observaciones</label>
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200 lg:col-span-2">
+                        <label className="font-semibold text-slate-700">Observaciones</label>
                         <textarea
                           value={expectativaForm.observaciones}
                           onChange={(e) =>
                             updateExpectativaField("observaciones", e.target.value)
                           }
                           placeholder="Notas adicionales sobre esta expectativa"
-                          className="mt-3 min-h-16 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                          className="mt-3 min-h-16 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                         />
                       </div>
                     </div>
                   )}
 
                   {perfilSeleccionado && (
-                    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-slate-600">
                       Agrega y gestiona expectativas para{" "}
                       <strong>{perfilSeleccionado.nombre_arquetipo}</strong>.
@@ -1085,7 +1088,7 @@ window.dispatchEvent(
                         type="button"
                         onClick={guardarExpectativa}
                         disabled={loading}
-                        className="rounded-xl border border-teal-600 px-5 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+                        className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md disabled:opacity-50"
                       >
                         {loading
                           ? "Guardando..."
@@ -1103,7 +1106,7 @@ window.dispatchEvent(
                             persona_usuaria_id: perfilSeleccionado.id,
                           });
                         }}
-                        className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
                       >
                         Limpiar
                       </button>
@@ -1112,9 +1115,9 @@ window.dispatchEvent(
                   )}
                 </div>
 
-                <aside className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <h2 className="text-lg font-bold">
+                <aside className="space-y-5">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50">
+                    <h2 className="text-lg font-bold tracking-tight text-slate-800">
                       Expectativas del perfil
                     </h2>
 
@@ -1131,14 +1134,14 @@ window.dispatchEvent(
                         {expectativasDelPerfil.map((item) => (
                           <div
                             key={item.id}
-                            className="rounded-xl border border-slate-200 p-3"
+                            className="rounded-xl border border-slate-200/80 p-3 hover:shadow-sm transition-all duration-150"
                           >
-                            <p className="text-sm font-semibold">
+                            <p className="text-sm font-semibold text-slate-800">
                               {item.expectativa_usuario}
                             </p>
 
                             <span
-                              className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold ${estadoClass(
+                              className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold shadow-sm ${estadoClass(
                                 item.nivel_cumplimiento
                               )}`}
                             >
@@ -1149,7 +1152,7 @@ window.dispatchEvent(
                               <button
                                 type="button"
                                 onClick={() => editarExpectativa(item.id)}
-                                className="font-semibold text-teal-700 hover:underline"
+                                className="font-semibold text-teal-700 hover:underline underline-offset-2 transition-all duration-150"
                               >
                                 Editar
                               </button>
@@ -1157,7 +1160,7 @@ window.dispatchEvent(
                               <button
                                 type="button"
                                 onClick={() => eliminarExpectativa(item.id)}
-                                className="font-semibold text-red-600 hover:underline"
+                                className="font-semibold text-red-600 hover:underline underline-offset-2 transition-all duration-150"
                               >
                                 Eliminar
                               </button>
@@ -1172,15 +1175,15 @@ window.dispatchEvent(
             )}
 
             {tab === "registros" && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <h2 className="text-lg font-bold">Registros Guardados</h2>
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+                <h2 className="text-lg font-bold tracking-tight text-slate-800">Registros Guardados</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-500">
                   Lista de habilitaciones y expectativas por perfil de persona usuaria.
                 </p>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-slate-200/60">
                   <table className="w-full text-left text-sm text-slate-600">
-                    <thead className="bg-slate-50 text-slate-700">
+                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50 text-slate-700">
                       <tr>
                         <th className="px-4 py-3 font-semibold">Perfil</th>
                         <th className="px-4 py-3 font-semibold">Habilitación</th>
@@ -1189,7 +1192,7 @@ window.dispatchEvent(
                         <th className="px-4 py-3 font-semibold">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200">
+                    <tbody className="divide-y divide-slate-200/80">
                       {habilitaciones.map((habilitacion) => {
                         const expectativasPerfil = expectativas.filter(
                           (exp) => exp.persona_usuaria_id === habilitacion.persona_usuaria_id
@@ -1199,7 +1202,7 @@ window.dispatchEvent(
                         );
 
                         return (
-                          <tr key={habilitacion.id}>
+                          <tr key={habilitacion.id} className="hover:bg-slate-50/50 transition-colors duration-100">
                             <td className="px-4 py-3 font-medium text-slate-900">
                               {perfil?.nombre_arquetipo || "Sin perfil"}
                             </td>
@@ -1211,9 +1214,9 @@ window.dispatchEvent(
                             </td>
                             <td className="px-4 py-3">
                               <span
-                                className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${habilitacion.estado === "validado"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-amber-100 text-amber-700"
+                                className={`inline-flex rounded-full px-2 py-1 text-xs font-bold shadow-sm ${habilitacion.estado === "validado"
+                                    ? "bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200/50"
+                                    : "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/50"
                                   }`}
                               >
                                 {habilitacion.estado === "validado" ? "Validado" : "Borrador"}
@@ -1226,21 +1229,21 @@ window.dispatchEvent(
                                   onClick={() =>
                                     verRegistro(habilitacion.persona_usuaria_id)
                                   }
-                                  className="font-semibold text-teal-700 hover:underline"
+                                  className="font-semibold text-teal-700 hover:text-teal-800 hover:underline underline-offset-2 transition-all duration-150"
                                 >
                                   Ver
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => editarHabilitacion(habilitacion.id)}
-                                  className="font-semibold text-teal-700 hover:underline"
+                                  className="font-semibold text-teal-700 hover:text-teal-800 hover:underline underline-offset-2 transition-all duration-150"
                                 >
                                   Editar
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => eliminarHabilitacion(habilitacion.id)}
-                                  className="font-semibold text-red-600 hover:underline"
+                                  className="font-semibold text-red-600 hover:text-red-700 hover:underline underline-offset-2 transition-all duration-150"
                                 >
                                   Eliminar
                                 </button>
@@ -1248,7 +1251,7 @@ window.dispatchEvent(
                                   <button
                                     type="button"
                                     onClick={() => validarHabilitacion(habilitacion.id)}
-                                    className="font-semibold text-blue-600 hover:underline"
+                                    className="font-semibold text-blue-600 hover:text-blue-700 hover:underline underline-offset-2 transition-all duration-150"
                                   >
                                     Validar
                                   </button>
@@ -1272,10 +1275,10 @@ window.dispatchEvent(
             )}
 
             {tab === "lienzo" && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h2 className="text-lg font-bold">
+                    <h2 className="text-lg font-bold tracking-tight text-slate-800">
                       Lienzo: Habilitación y Expectativas
                     </h2>
 
@@ -1288,10 +1291,10 @@ window.dispatchEvent(
 
                   {habilitacionDelPerfil && (
                     <span
-                      className={`rounded-full px-3 py-1 text-sm font-bold ${
+                      className={`rounded-full px-3 py-1 text-sm font-bold shadow-sm ${
                         habilitacionDelPerfil.estado === "validado"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
+                          ? "bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200/50"
+                          : "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/50"
                       }`}
                     >
                       {habilitacionDelPerfil.estado === "validado"
@@ -1302,46 +1305,48 @@ window.dispatchEvent(
                 </div>
 
                 {!perfilSeleccionado ? (
-                  <p className="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                  <p className="mt-6 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 p-4 text-sm text-slate-500 border border-slate-200/60">
                     Selecciona un perfil arriba para ver su lienzo.
                   </p>
                 ) : (
                 <div className="mt-6 grid gap-4 lg:grid-cols-2">
                   {habilitacionDelPerfil ? (
-                    <div className="rounded-2xl border border-slate-200 p-4">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                       <h3 className="font-bold text-teal-700">
                         Diagnóstico de Habilitación
                       </h3>
 
                       <div className="mt-4 space-y-2 text-sm">
-                        <div>
-                          <strong>Acceso:</strong> {habilitacionDelPerfil.nivel_acceso}
+                        <div className="flex justify-between py-1">
+                          <span className="text-slate-500">Acceso:</span>
+                          <span className="font-semibold text-slate-800">{habilitacionDelPerfil.nivel_acceso}</span>
                         </div>
-                        <div>
-                          <strong>Conocimiento:</strong>{" "}
-                          {habilitacionDelPerfil.nivel_conocimiento}
+                        <div className="flex justify-between py-1 border-t border-slate-100">
+                          <span className="text-slate-500">Conocimiento:</span>
+                          <span className="font-semibold text-slate-800">{habilitacionDelPerfil.nivel_conocimiento}</span>
                         </div>
-                        <div>
-                          <strong>Digital:</strong> {habilitacionDelPerfil.nivel_digital}
+                        <div className="flex justify-between py-1 border-t border-slate-100">
+                          <span className="text-slate-500">Digital:</span>
+                          <span className="font-semibold text-slate-800">{habilitacionDelPerfil.nivel_digital}</span>
                         </div>
                       </div>
 
-                      <div className="mt-4 border-t border-slate-200 pt-4 text-sm">
-                        <strong className="block">Descripción:</strong>
-                        <p className="mt-1 text-slate-700">
+                      <div className="mt-4 border-t border-slate-200/80 pt-4 text-sm">
+                        <strong className="block text-slate-700">Descripción:</strong>
+                        <p className="mt-1 text-slate-700 leading-relaxed">
                           {habilitacionDetalle?.descripcion_habilitacion || "—"}
                         </p>
                       </div>
 
                       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <strong className="block text-sm">Barreras:</strong>
+                        <div className="bg-orange-50/50 border border-orange-200/60 p-3 rounded-xl">
+                          <strong className="block text-sm text-orange-700">Barreras:</strong>
                           <p className="mt-1 text-sm text-slate-700">
                             {habilitacionDetalle?.barreras_detectadas || "—"}
                           </p>
                         </div>
-                        <div>
-                          <strong className="block text-sm">Facilitadores:</strong>
+                        <div className="bg-emerald-50/50 border border-emerald-200/60 p-3 rounded-xl">
+                          <strong className="block text-sm text-emerald-700">Facilitadores:</strong>
                           <p className="mt-1 text-sm text-slate-700">
                             {habilitacionDetalle?.facilitadores || "—"}
                           </p>
@@ -1349,21 +1354,21 @@ window.dispatchEvent(
                       </div>
 
                       {habilitacionDetalle?.observaciones && (
-                        <div className="mt-4 border-t border-slate-200 pt-4 text-sm">
-                          <strong className="block">Observaciones:</strong>
-                          <p className="mt-1 text-slate-700">
+                        <div className="mt-4 border-t border-slate-200/80 pt-4 text-sm">
+                          <strong className="block text-slate-700">Observaciones:</strong>
+                          <p className="mt-1 text-slate-700 leading-relaxed">
                             {habilitacionDetalle.observaciones}
                           </p>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-500">
+                    <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-slate-100/30 p-4 text-center text-sm text-slate-500">
                       Sin habilitación registrada.
                     </div>
                   )}
 
-                  <div className="rounded-2xl border border-slate-200 p-4">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200">
                     <h3 className="font-bold text-teal-700">
                       Expectativas ({expectativasDelPerfil.length})
                     </h3>
@@ -1377,14 +1382,14 @@ window.dispatchEvent(
                         {expectativasDelPerfil.map((exp) => (
                           <div
                             key={exp.id}
-                            className="rounded-xl border border-slate-200 p-3"
+                            className="rounded-xl border border-slate-200/80 p-3 hover:shadow-sm transition-all duration-150"
                           >
-                            <p className="font-semibold text-sm">
+                            <p className="font-semibold text-sm text-slate-800">
                               {exp.expectativa_usuario}
                             </p>
                             
                             <span
-                              className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold ${estadoClass(
+                              className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold shadow-sm ${estadoClass(
                                 exp.nivel_cumplimiento
                               )}`}
                             >
@@ -1393,29 +1398,29 @@ window.dispatchEvent(
 
                             {exp.resultado_esperado && (
                               <div className="mt-3 text-sm">
-                                <strong>Resultado esperado:</strong>
-                                <p className="text-slate-700">{exp.resultado_esperado}</p>
+                                <strong className="text-slate-700">Resultado esperado:</strong>
+                                <p className="text-slate-600 mt-1">{exp.resultado_esperado}</p>
                               </div>
                             )}
 
                             {exp.indicador_exito && (
                               <div className="mt-2 text-sm">
-                                <strong>Indicador de éxito:</strong>
-                                <p className="text-slate-700">{exp.indicador_exito}</p>
+                                <strong className="text-slate-700">Indicador de éxito:</strong>
+                                <p className="text-slate-600 mt-1">{exp.indicador_exito}</p>
                               </div>
                             )}
 
                             {exp.linea_accion && (
                               <div className="mt-2 text-sm">
-                                <strong>Línea de acción:</strong>
-                                <p className="text-slate-700">{exp.linea_accion}</p>
+                                <strong className="text-slate-700">Línea de acción:</strong>
+                                <p className="text-slate-600 mt-1">{exp.linea_accion}</p>
                               </div>
                             )}
 
                             {exp.analisis_ia && (
                               <div className="mt-2 text-sm">
-                                <strong>Observaciones:</strong>
-                                <p className="text-slate-700">{exp.analisis_ia}</p>
+                                <strong className="text-slate-700">Observaciones:</strong>
+                                <p className="text-slate-600 mt-1">{exp.analisis_ia}</p>
                               </div>
                             )}
                           </div>
@@ -1427,6 +1432,7 @@ window.dispatchEvent(
                 )}
               </div>
             )}
+
           </div>
         </section>
       </div>

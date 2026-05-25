@@ -18,8 +18,11 @@ from app.models import (
     CalendarizacionUpdate,
     UsuarioAccesoCreate,
     InvestigacionUpdate,
+    IASintesisRequest,
+    IASugerenciaRequest,
+    IAMejoraRedaccionRequest,
 )
-from app import crud
+from app import crud, ai_service
 
 
 app = FastAPI(
@@ -139,8 +142,8 @@ async def actualizar_etapa_proyecto(
 
 
 @app.get("/proyectos/{proyecto_id}/etapas")
-def obtener_etapas_proyecto(proyecto_id: int):
-    proyecto = crud.obtener_proyecto(proyecto_id)
+async def obtener_etapas_proyecto(proyecto_id: str):
+    proyecto = await crud.obtener_proyecto(proyecto_id)
 
     if not proyecto:
         raise HTTPException(
@@ -155,8 +158,8 @@ def obtener_etapas_proyecto(proyecto_id: int):
 
 
 @app.post("/registros-etapa")
-def guardar_registro_etapa(data: RegistroEtapaCreate):
-    proyecto = crud.obtener_proyecto(data.proyecto_id)
+async def guardar_registro_etapa(data: RegistroEtapaCreate):
+    proyecto = await crud.obtener_proyecto(data.proyecto_id)
 
     if not proyecto:
         raise HTTPException(
@@ -170,7 +173,7 @@ def guardar_registro_etapa(data: RegistroEtapaCreate):
             detail="La etapa debe estar entre 1 y 7."
         )
 
-    registro = crud.guardar_registro_etapa(data)
+    registro = await crud.guardar_registro_etapa(data)
 
     return {
         "message": "Registro de etapa guardado correctamente",
@@ -179,8 +182,8 @@ def guardar_registro_etapa(data: RegistroEtapaCreate):
 
 
 @app.get("/proyectos/{proyecto_id}/registros")
-def obtener_registros_proyecto(proyecto_id: int):
-    proyecto = crud.obtener_proyecto(proyecto_id)
+async def obtener_registros_proyecto(proyecto_id: str):
+    proyecto = await crud.obtener_proyecto(proyecto_id)
 
     if not proyecto:
         raise HTTPException(
@@ -188,7 +191,7 @@ def obtener_registros_proyecto(proyecto_id: int):
             detail="Proyecto no encontrado."
         )
 
-    registros = crud.listar_registros_por_proyecto(proyecto_id)
+    registros = await crud.listar_registros_por_proyecto(proyecto_id)
 
     return {
         "proyecto": proyecto,
@@ -792,6 +795,44 @@ async def validar_plan_investigacion(investigacion_id: str):
     return {
         "message": "Plan de investigación validado correctamente",
         "data": investigacion,
+    }
+
+
+@app.post("/ia/sintetizar-evidencias")
+async def ia_sintetizar_evidencias(data: IASintesisRequest):
+    resultado = await ai_service.sintetizar_evidencias(data.evidencias, data.etapa)
+
+    return {
+        "modo": ai_service.MODO,
+        "resultado": resultado,
+    }
+
+
+@app.post("/ia/sugerir-proximos-pasos")
+async def ia_sugerir_proximos_pasos(data: IASugerenciaRequest):
+    if data.etapa < 1 or data.etapa > 7:
+        raise HTTPException(
+            status_code=400,
+            detail="La etapa debe estar entre 1 y 7."
+        )
+
+    resultado = await ai_service.sugerir_proximos_pasos(
+        data.etapa, data.contexto, data.datos_etapa
+    )
+
+    return {
+        "modo": ai_service.MODO,
+        "resultado": resultado,
+    }
+
+
+@app.post("/ia/mejorar-redaccion")
+async def ia_mejorar_redaccion(data: IAMejoraRedaccionRequest):
+    resultado = await ai_service.mejorar_redaccion(data.texto, data.tono)
+
+    return {
+        "modo": ai_service.MODO,
+        "resultado": resultado,
     }
 
 

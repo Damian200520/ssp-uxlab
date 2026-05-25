@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Check, X, User } from "lucide-react";
+import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
 import { supabase } from "./supabaseClient";
 
 
@@ -162,32 +164,18 @@ function formToNecesidadDb(form: FormState) {
 }
 function estadoClass(estado: EstadoNecesidad) {
     return estado === "Validado"
-        ? "bg-teal-100 text-teal-700"
-        : "bg-amber-100 text-amber-700";
+        ? "bg-gradient-to-r from-teal-50 to-emerald-50 text-teal-700 border border-teal-200/50"
+        : "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200/50";
 }
 
 function impactoClass(impacto: Impacto) {
     const map: Record<Impacto, string> = {
-        Alto: "bg-red-100 text-red-800",
-        Medio: "bg-yellow-100 text-yellow-800",
-        Bajo: "bg-slate-100 text-slate-600",
+        Alto: "bg-gradient-to-r from-red-50 to-rose-50 text-red-800 border border-red-200/50",
+        Medio: "bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-800 border border-yellow-200/50",
+        Bajo: "bg-gradient-to-r from-slate-50 to-slate-100/50 text-slate-600 border border-slate-200/50",
     };
     return map[impacto];
 }
-
-function generarSugerenciaIA(form: FormState): string {
-    if (form.impacto === "Alto") {
-        return "Una fricción de impacto ALTO requiere que el «Rol del Servicio» incluya una solución prioritaria documentada.";
-    }
-    if (form.categoria === "Informar") {
-        return "En categoría «Informar», la fricción suele ser la confusión de canales. Sugerimos enfocarse en orientación clara y acceso directo a la información.";
-    }
-    if (form.fricciones.trim().length > 5) {
-        return "Analizando las fricciones, parece haber una brecha operativa. Valida si el sistema puede automatizar ese paso o simplificar el flujo.";
-    }
-    return "El mapa parece equilibrado. Valida si las acciones de la persona se corresponden realmente con el objetivo declarado.";
-}
-
 
 function ToastList({
     toasts,
@@ -198,20 +186,20 @@ function ToastList({
 }) {
     if (!toasts.length) return null;
     const colors: Record<Toast["type"], string> = {
-        success: "bg-teal-600",
-        error: "bg-red-500",
-        info: "bg-slate-700",
+        success: "bg-gradient-to-br from-teal-600 to-emerald-600",
+        error: "bg-gradient-to-br from-red-500 to-rose-600",
+        info: "bg-gradient-to-br from-slate-700 to-slate-800",
     };
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
             {toasts.map((t) => (
                 <div
                     key={t.id}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${colors[t.type]}`}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-black/10 ${colors[t.type]}`}
                 >
                     <span>{t.message}</span>
-                    <button onClick={() => onRemove(t.id)} className="ml-2 opacity-70 hover:opacity-100">
-                        ✕
+                    <button onClick={() => onRemove(t.id)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity" aria-label="Cerrar notificación">
+                        <X className="h-4 w-4" />
                     </button>
                 </div>
             ))}
@@ -229,19 +217,19 @@ function ConfirmDialog({
     onCancel: () => void;
 }) {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl shadow-black/10">
                 <p className="text-sm text-slate-700">{message}</p>
                 <div className="mt-5 flex justify-end gap-3">
                     <button
                         onClick={onCancel}
-                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={onConfirm}
-                        className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
+                        className="rounded-xl bg-gradient-to-br from-red-500 to-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-red-600 hover:to-rose-700 hover:shadow-md"
                     >
                         Eliminar
                     </button>
@@ -266,7 +254,6 @@ export default function NecesidadesFlow({
     const [form, setForm] = useState<FormState>(FORM_INICIAL);
     const [erroresForm, setErroresForm] = useState<Partial<Record<keyof FormState, string>>>({});
     const [toasts, setToasts] = useState<Toast[]>([]);
-    const [sugerenciaIA, setSugerenciaIA] = useState<string | null>(null);
     const [confirmPendiente, setConfirmPendiente] = useState<{ id: string } | null>(null);
 
     const toastIdRef = useRef(0);
@@ -346,7 +333,6 @@ export default function NecesidadesFlow({
         (personas: Persona[]) => {
             setForm({ ...FORM_INICIAL, persona_id: personas[0]?.id ?? "" });
             setIdEnEdicion(null);
-            setSugerenciaIA(null);
             setErroresForm({});
         },
         []
@@ -401,7 +387,6 @@ export default function NecesidadesFlow({
             estado: n.estado ?? "Borrador",
         });
         setIdEnEdicion(n.id);
-        setSugerenciaIA(null);
         setErroresForm({});
         setTab("formulario");
     }
@@ -473,7 +458,7 @@ export default function NecesidadesFlow({
 
 
     return (
-        <main className="min-h-screen bg-slate-50 text-slate-900">
+        <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
             <ToastList toasts={toasts} onRemove={removeToast} />
 
             {confirmPendiente && (
@@ -485,10 +470,9 @@ export default function NecesidadesFlow({
             )}
 
             <div className="flex">
-                {/* Sidebar */}
-                <aside className="hidden min-h-screen w-64 border-r border-slate-200 bg-white p-6 lg:block">
-                    <div className="text-2xl font-bold text-teal-700">SSP·UXLab</div>
-                    <nav className="mt-10 space-y-2 text-sm flex flex-col items-start">
+                <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+                    <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
+                    <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
                         {(
                             [
                                 ["← Volver al Catálogo", null, false],
@@ -505,8 +489,8 @@ export default function NecesidadesFlow({
                             <button
                                 key={label}
                                 onClick={() => onNavigate && onNavigate(route)}
-                                className={`w-full text-left rounded-xl px-3 py-3 ${
-                                    active ? "bg-teal-50 font-semibold text-teal-700" : "text-slate-600 hover:bg-slate-50"
+                                className={`w-full text-left rounded-xl px-3 py-3 transition-all duration-150 ${
+                                    active ? "bg-gradient-to-r from-teal-50 to-emerald-50 font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
                                 }`}
                             >
                                 {label}
@@ -516,14 +500,14 @@ export default function NecesidadesFlow({
                 </aside>
 
                 <section className="w-full">
-                    <header className="border-b border-slate-200 bg-white px-6 py-4">
+                    <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <div className="inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm">
+                                <div className="inline-flex rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm shadow-sm">
                                     Propósito 1 · Diseñar servicios centrados en las personas
                                 </div>
-                                <h1 className="mt-6 text-4xl font-bold">Necesidades</h1>
-                                <p className="mt-1 text-slate-500">
+                                <h1 className="mt-6 text-4xl font-bold tracking-tight">Necesidades</h1>
+                                <p className="mt-1 text-slate-500 leading-relaxed">
                                     Mapeo e identificación exacta de fricciones y roles del servicio.
                                 </p>
                             </div>
@@ -531,20 +515,20 @@ export default function NecesidadesFlow({
                     </header>
 
                     <div className="px-6 py-6">
-                        <div className="mb-6 flex gap-6 border-b border-slate-200">
+                        <div className="mb-6 flex gap-6 border-b border-slate-200/80">
                             {(
                                 [
-                                    ["formulario", idEnEdicion ? "Editando Necesidad…" : "Formulario"],
-                                    ["registros", "Necesidades Guardadas"],
+                                    ["formulario", idEnEdicion ? "Editando necesidad…" : "Formulario"],
+                                    ["registros", "Necesidades guardadas"],
                                     ["lienzo", "Tabla Priorizada (Lienzo)"],
                                 ] as [typeof tab, string][]
                             ).map(([key, label]) => (
                                 <button
                                     key={key}
                                     onClick={() => setTab(key)}
-                                    className={`border-b-2 px-2 pb-3 text-sm font-semibold ${tab === key
+                                    className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${tab === key
                                         ? "border-teal-600 text-teal-700"
-                                        : "border-transparent text-slate-500"
+                                        : "border-transparent text-slate-500 hover:text-slate-700"
                                         }`}
                                 >
                                     {label}
@@ -552,12 +536,13 @@ export default function NecesidadesFlow({
                             ))}
                         </div>
 
+                        <AsistenciaIAEtapa etapa={4} contexto="Necesidades" />
+
                         {tab === "formulario" && (
                             <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
                                 <div className="space-y-6">
-                                    {/* Descripción */}
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                        <h2 className="text-xl font-bold">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+                                        <h2 className="text-xl font-bold tracking-tight">
                                             Herramienta: Mapa de Problemas y Necesidades
                                         </h2>
                                         <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
@@ -569,13 +554,13 @@ export default function NecesidadesFlow({
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50 space-y-5">
                                         <div>
-                                            <label className="font-semibold text-sm">
+                                            <label className="font-semibold text-sm text-slate-700">
                                                 Perfil Asociado (Persona Usuaria)
                                             </label>
                                             {personas.length === 0 ? (
-                                                <p className="mt-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                                                <p className="mt-2 text-xs text-amber-600 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-xl px-3 py-2">
                                                     No hay perfiles creados aún. Crea uno primero en «Definir Personas».
                                                 </p>
                                             ) : (
@@ -586,7 +571,7 @@ export default function NecesidadesFlow({
                                                         if (erroresForm.persona_id)
                                                             setErroresForm({ ...erroresForm, persona_id: undefined });
                                                     }}
-                                                    className={`mt-2 w-full rounded-xl border px-3 py-2 text-sm outline-none bg-teal-50/20 focus:border-teal-600 ${erroresForm.persona_id ? "border-red-400" : "border-slate-200"
+                                                    className={`mt-2 w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 ${erroresForm.persona_id ? "border-red-400 bg-red-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
                                                         }`}
                                                 >
                                                     <option value="" disabled>
@@ -605,19 +590,19 @@ export default function NecesidadesFlow({
                                         </div>
 
                                         <div>
-                                            <label className="font-semibold text-sm">Situación Vital / Inicial</label>
+                                            <label className="font-semibold text-sm text-slate-700">Situación Vital / Inicial</label>
                                             <textarea
                                                 value={form.situacion_inicial}
                                                 onChange={(e) =>
                                                     setForm({ ...form, situacion_inicial: e.target.value })
                                                 }
                                                 placeholder="Ej: Acaba de perder su empleo y busca orientación..."
-                                                className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="font-semibold text-sm">Objetivo de la Persona</label>
+                                            <label className="font-semibold text-sm text-slate-700">Objetivo de la Persona</label>
                                             <div className="flex flex-wrap gap-2 mt-2 mb-2">
                                                 <span className="text-xs text-slate-500 font-medium py-1">
                                                     Sugerencias:
@@ -638,7 +623,7 @@ export default function NecesidadesFlow({
                                                                 acciones: undefined,
                                                             }));
                                                         }}
-                                                        className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-xs text-teal-700 hover:bg-teal-100"
+                                                        className="rounded-full border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-2 py-0.5 text-xs text-teal-700 transition-all duration-150 hover:from-teal-100 hover:to-emerald-100 shadow-sm"
                                                     >
                                                         + {obj}
                                                     </button>
@@ -653,7 +638,7 @@ export default function NecesidadesFlow({
                                                         setErroresForm({ ...erroresForm, objetivo: undefined });
                                                 }}
                                                 placeholder="¿Qué quiere lograr o resolver?"
-                                                className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-teal-600 ${erroresForm.objetivo ? "border-red-400 bg-red-50" : "border-slate-200"
+                                                className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 ${erroresForm.objetivo ? "border-red-400 bg-red-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
                                                     }`}
                                             />
                                             {erroresForm.objetivo && (
@@ -663,7 +648,7 @@ export default function NecesidadesFlow({
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="font-semibold text-sm">Acciones que debe realizar</label>
+                                                <label className="font-semibold text-sm text-slate-700">Acciones que debe realizar</label>
                                                 <textarea
                                                     value={form.acciones}
                                                     onChange={(e) => {
@@ -672,7 +657,7 @@ export default function NecesidadesFlow({
                                                             setErroresForm({ ...erroresForm, acciones: undefined });
                                                     }}
                                                     placeholder="Paso a paso de lo que la persona hace..."
-                                                    className={`mt-2 min-h-32 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-teal-600 ${erroresForm.acciones ? "border-red-400 bg-red-50" : "border-slate-200"
+                                                    className={`mt-2 min-h-32 w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 ${erroresForm.acciones ? "border-red-400 bg-red-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
                                                         }`}
                                                 />
                                                 {erroresForm.acciones && (
@@ -687,7 +672,7 @@ export default function NecesidadesFlow({
                                                     value={form.rol_servicio}
                                                     onChange={(e) => setForm({ ...form, rol_servicio: e.target.value })}
                                                     placeholder="¿Cómo responde o qué facilita la institución en cada paso?"
-                                                    className="mt-2 min-h-32 w-full rounded-xl border border-teal-200 bg-teal-50/30 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 min-h-32 w-full rounded-xl border border-teal-200/60 bg-teal-50/30 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 hover:border-teal-300"
                                                 />
                                             </div>
                                         </div>
@@ -709,7 +694,7 @@ export default function NecesidadesFlow({
                                                                     : fric,
                                                             })
                                                         }
-                                                        className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[11px] text-orange-700 hover:bg-orange-100"
+                                                        className="rounded-full border border-orange-200/60 bg-gradient-to-r from-orange-50 to-amber-50 px-2 py-0.5 text-[11px] text-orange-700 transition-all duration-150 hover:from-orange-100 hover:to-amber-100 shadow-sm"
                                                     >
                                                         + {fric}
                                                     </button>
@@ -719,19 +704,19 @@ export default function NecesidadesFlow({
                                                 value={form.fricciones}
                                                 onChange={(e) => setForm({ ...form, fricciones: e.target.value })}
                                                 placeholder="Dolores, demoras o bloqueos encontrados..."
-                                                className="w-full min-h-20 rounded-xl border border-red-200 bg-red-50/40 px-3 py-2 text-sm outline-none focus:border-red-500"
+                                                className="w-full min-h-20 rounded-xl border border-red-200/60 bg-red-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-red-500 focus:ring-2 focus:ring-red-100 hover:border-red-300"
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-3 gap-4">
                                             <div>
-                                                <label className="font-semibold text-sm">Categoría</label>
+                                                <label className="font-semibold text-sm text-slate-700">Categoría</label>
                                                 <select
                                                     value={form.categoria}
                                                     onChange={(e) =>
                                                         setForm({ ...form, categoria: e.target.value as Categoria })
                                                     }
-                                                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 >
                                                     <option>Informar</option>
                                                     <option>Tramitar</option>
@@ -739,13 +724,13 @@ export default function NecesidadesFlow({
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="font-semibold text-sm">Impacto</label>
+                                                <label className="font-semibold text-sm text-slate-700">Impacto</label>
                                                 <select
                                                     value={form.impacto}
                                                     onChange={(e) =>
                                                         setForm({ ...form, impacto: e.target.value as Impacto })
                                                     }
-                                                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 >
                                                     <option>Alto</option>
                                                     <option>Medio</option>
@@ -753,13 +738,13 @@ export default function NecesidadesFlow({
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="font-semibold text-sm">Estado</label>
+                                                <label className="font-semibold text-sm text-slate-700">Estado</label>
                                                 <select
                                                     value={form.estado}
                                                     onChange={(e) =>
                                                         setForm({ ...form, estado: e.target.value as EstadoNecesidad })
                                                     }
-                                                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+                                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 >
                                                     <option>Borrador</option>
                                                     <option>Validado</option>
@@ -773,7 +758,7 @@ export default function NecesidadesFlow({
                                             <button
                                                 type="button"
                                                 onClick={() => resetForm(personas)}
-                                                className="rounded-xl border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                                                className="rounded-xl border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
                                             >
                                                 Cancelar edición
                                             </button>
@@ -782,60 +767,29 @@ export default function NecesidadesFlow({
                                             type="button"
                                             onClick={guardarNecesidad}
                                             disabled={loading}
-                                            className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                                            className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md disabled:opacity-50"
                                         >
                                             {loading
                                                 ? "Guardando…"
                                                 : idEnEdicion
                                                     ? "Actualizar Necesidad"
-                                                    : "Guardar Necesidad"}
+                                                    : "Guardar necesidad"}
                                         </button>
                                     </div>
                                 </div>
 
-                                <aside className="space-y-6">
-                                    <div className="border border-slate-200 rounded-2xl bg-white p-5 shadow-sm space-y-4">
-                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 tracking-wider uppercase">
-                                            <span>✨</span> ASISTENCIA METODOLÓGICA UXLab AI
-                                        </div>
-                                        <div className="text-sm bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3">
-                                            <p className="text-slate-600 text-xs leading-relaxed">
-                                                Genera sugerencias dinámicas de fricciones metodológicas basadas en los
-                                                datos del formulario.
-                                            </p>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSugerenciaIA(generarSugerenciaIA(form))}
-                                                className="w-full text-center rounded-xl bg-teal-50 border border-teal-200 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-100 transition-colors"
-                                            >
-                                                Mostrar sugerencia
-                                            </button>
-                                            {sugerenciaIA && (
-                                                <div className="rounded-xl bg-teal-50 border border-teal-200 p-3 text-xs text-teal-800 leading-relaxed">
-                                                    <span className="font-bold block mb-1">UXLab AI</span>
-                                                    {sugerenciaIA}
-                                                    <button
-                                                        onClick={() => setSugerenciaIA(null)}
-                                                        className="mt-2 block text-teal-500 hover:text-teal-700 text-[10px]"
-                                                    >
-                                                        Cerrar
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                        <h3 className="font-bold text-sm">Mapa Priorizado</h3>
+                                <aside className="space-y-5">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                                        <h3 className="font-bold text-sm text-slate-800">Mapa Priorizado</h3>
                                         <ul className="mt-4 space-y-3 text-[13px] text-slate-700">
                                             {[
                                                 "Vinculación 1:1 con Perfil",
-                                                "Pool de objetivos mapeados",
+                                                "Conjunto de objetivos identificados",
                                                 "Fricciones y Rol del Servicio",
                                                 "Impacto y Estado definidos",
                                             ].map((item) => (
                                                 <li key={item} className="flex gap-3">
-                                                    <span className="font-bold text-teal-700">✓</span>
+                                                    <Check className="h-4 w-4 shrink-0 mt-0.5 text-teal-700" aria-hidden="true" />
                                                     <span>{item}</span>
                                                 </li>
                                             ))}
@@ -847,8 +801,8 @@ export default function NecesidadesFlow({
 
                         {tab === "registros" && (
                             <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                    <h2 className="text-xl font-bold mb-6">Necesidades y Problemas Guardados</h2>
+                                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+                                    <h2 className="text-xl font-bold tracking-tight mb-6">Necesidades y Problemas Guardados</h2>
                                     {necesidades.length === 0 ? (
                                         <p className="text-sm text-slate-400 text-center py-10">
                                             Aún no hay necesidades guardadas. Crea la primera desde el formulario.
@@ -858,17 +812,18 @@ export default function NecesidadesFlow({
                                             {necesidades.map((n) => (
                                                 <div
                                                     key={n.id}
-                                                    className={`rounded-2xl border p-5 shadow-sm space-y-3 ${lienzoSeleccionado?.id === n.id
-                                                        ? "border-teal-600 bg-teal-50/40"
-                                                        : "border-slate-200 bg-white"
-                                                        }`}
+                                                    className={`rounded-2xl border p-5 shadow-sm space-y-3 transition-all duration-200 ${
+                                                        lienzoSeleccionado?.id === n.id
+                                                            ? "border-teal-400/60 bg-gradient-to-r from-teal-50/60 to-emerald-50/60 shadow-md shadow-teal-100/30"
+                                                            : "border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-md hover:shadow-slate-100/50"
+                                                    }`}
                                                 >
                                                     <div className="flex justify-between items-start">
                                                         <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600 uppercase">
-                                                            👤 {obtenerNombrePersona(n.persona_id)}
+                                                            <User className="h-3.5 w-3.5 inline mr-1 text-slate-500" aria-hidden="true" /> {obtenerNombrePersona(n.persona_id)}
                                                         </span>
                                                         <span
-                                                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${impactoClass(
+                                                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide shadow-sm ${impactoClass(
                                                                 n.impacto
                                                             )}`}
                                                         >
@@ -882,7 +837,7 @@ export default function NecesidadesFlow({
 
                                                     <div className="flex gap-2">
                                                         <span
-                                                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${estadoClass(
+                                                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide shadow-sm ${estadoClass(
                                                                 n.estado
                                                             )}`}
                                                         >
@@ -896,25 +851,25 @@ export default function NecesidadesFlow({
                                                     <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-100">
                                                         <button
                                                             onClick={() => verFicha(n)}
-                                                            className="text-xs font-semibold text-teal-700 hover:text-teal-900 border border-teal-200 px-3 py-1 rounded bg-teal-50"
+                                                            className="text-xs font-semibold text-teal-700 transition-all duration-150 border border-teal-200/60 px-3 py-1 rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 shadow-sm"
                                                         >
                                                             Ver Ficha
                                                         </button>
                                                         <button
                                                             onClick={() => prepararEdicion(n)}
-                                                            className="text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 px-3 py-1 rounded"
+                                                            className="text-xs font-semibold text-slate-600 transition-all duration-150 border border-slate-200/60 px-3 py-1 rounded-lg hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
                                                         >
                                                             Editar
                                                         </button>
                                                         <button
                                                             onClick={() => validarNecesidad(n.id)}
-                                                            className="text-xs font-semibold text-green-700 hover:text-green-900 border border-green-200 px-3 py-1 rounded bg-green-50"
+                                                            className="text-xs font-semibold text-green-700 transition-all duration-150 border border-green-200/60 px-3 py-1 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 shadow-sm"
                                                         >
                                                             Validar
                                                         </button>
                                                         <button
                                                             onClick={() => solicitarEliminar(n.id)}
-                                                            className="text-xs font-semibold text-red-600 hover:text-red-900 border border-red-200 px-3 py-1 rounded"
+                                                            className="text-xs font-semibold text-red-600 transition-all duration-150 border border-red-200/60 px-3 py-1 rounded-lg hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
                                                         >
                                                             Eliminar
                                                         </button>
@@ -925,9 +880,9 @@ export default function NecesidadesFlow({
                                     )}
                                 </div>
                                 <aside className="hidden xl:block">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6 sticky top-6">
-                                        <h3 className="font-bold">Acciones de Registros</h3>
-                                        <p className="mt-2 text-sm text-slate-500">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50 sticky top-6">
+                                        <h3 className="font-bold text-slate-800">Acciones de Registros</h3>
+                                        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
                                             Haz clic en "Ver Ficha" para revisar todo el mapa de fricciones y las acciones
                                             sugeridas de forma consolidada.
                                         </p>
@@ -938,33 +893,33 @@ export default function NecesidadesFlow({
 
                         {tab === "lienzo" && (
                             <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-8">
+                                <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-md shadow-slate-100/50">
                                     {!lienzoSeleccionado ? (
                                         <p className="text-sm text-slate-500 text-center py-10">
                                             Selecciona "Ver Ficha" en la pestaña de registros para visualizar el lienzo.
                                         </p>
                                     ) : (
                                         <div className="space-y-6">
-                                            <div className="flex justify-between items-start border-b border-slate-200 pb-5">
+                                            <div className="flex justify-between items-start border-b border-slate-200/80 pb-5">
                                                 <div>
                                                     <div className="flex items-center gap-3 mb-2">
                                                         <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase">
-                                                            👤 Perfil: {obtenerNombrePersona(lienzoSeleccionado.persona_id)}
+                                                            <User className="h-3.5 w-3.5 inline mr-1 text-slate-500" aria-hidden="true" /> Perfil: {obtenerNombrePersona(lienzoSeleccionado.persona_id)}
                                                         </span>
                                                         <span
-                                                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${impactoClass(
+                                                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${impactoClass(
                                                                 lienzoSeleccionado.impacto
                                                             )}`}
                                                         >
                                                             Impacto {lienzoSeleccionado.impacto}
                                                         </span>
                                                     </div>
-                                                    <h2 className="text-2xl font-bold text-slate-900 leading-tight">
+                                                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 leading-tight">
                                                         Objetivo: {lienzoSeleccionado.objetivo}
                                                     </h2>
                                                 </div>
                                                 <span
-                                                    className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide ${estadoClass(
+                                                    className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm ${estadoClass(
                                                         lienzoSeleccionado.estado
                                                     )}`}
                                                 >
@@ -973,54 +928,54 @@ export default function NecesidadesFlow({
                                             </div>
 
                                             {lienzoSeleccionado.situacion_inicial && (
-                                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <div className="bg-gradient-to-b from-slate-50 to-slate-100/30 p-4 rounded-xl border border-slate-100/80 shadow-sm">
                                                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                                                         Situación Inicial / Vital
                                                     </h3>
-                                                    <p className="text-slate-700 text-sm italic">
+                                                    <p className="text-slate-700 text-sm italic leading-relaxed">
                                                         "{lienzoSeleccionado.situacion_inicial}"
                                                     </p>
                                                 </div>
                                             )}
 
                                             <div className="grid grid-cols-2 gap-6">
-                                                <div className="bg-white border border-slate-200 p-5 rounded-xl">
+                                                <div className="bg-white border border-slate-200/80 p-5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                                                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                                                         Acciones de la Persona
                                                     </h3>
-                                                    <div className="text-sm text-slate-700 whitespace-pre-wrap">
+                                                    <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                                                         {lienzoSeleccionado.acciones}
                                                     </div>
                                                 </div>
-                                                <div className="bg-teal-50/30 border border-teal-100 p-5 rounded-xl">
+                                                <div className="bg-gradient-to-b from-teal-50/30 to-teal-50/10 border border-teal-100/60 p-5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                                                     <h3 className="text-xs font-bold text-teal-700 uppercase tracking-wider mb-3">
                                                         Rol Institucional del Servicio
                                                     </h3>
-                                                    <div className="text-sm text-slate-700 whitespace-pre-wrap">
+                                                    <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                                                         {lienzoSeleccionado.rol_servicio || "N/A"}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {lienzoSeleccionado.fricciones && (
-                                                <div className="bg-red-50/50 border border-red-100 p-5 rounded-xl">
+                                                <div className="bg-gradient-to-b from-red-50/50 to-red-50/20 border border-red-100/60 p-5 rounded-xl shadow-sm">
                                                     <h3 className="text-xs font-bold text-red-700 uppercase tracking-wider mb-2">
                                                         Fricciones Detectadas
                                                     </h3>
-                                                    <p className="text-sm text-red-900">{lienzoSeleccionado.fricciones}</p>
+                                                    <p className="text-sm text-red-900 leading-relaxed">{lienzoSeleccionado.fricciones}</p>
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                 </div>
 
-                                <aside className="space-y-6">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                        <h3 className="font-bold mb-4">Acciones del Lienzo</h3>
+                                <aside className="space-y-5">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
+                                        <h3 className="font-bold text-slate-800 mb-4">Acciones del Lienzo</h3>
                                         <div className="space-y-3">
                                             <button
                                                 onClick={() => setTab("registros")}
-                                                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                                className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:shadow-sm"
                                             >
                                                 Volver al listado
                                             </button>
@@ -1028,13 +983,13 @@ export default function NecesidadesFlow({
                                                 <>
                                                     <button
                                                         onClick={() => prepararEdicion(lienzoSeleccionado)}
-                                                        className="w-full rounded-xl border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+                                                        className="w-full rounded-xl border border-teal-300/60 px-4 py-2 text-sm font-semibold text-teal-700 transition-all duration-150 hover:border-teal-400 hover:bg-teal-50 hover:shadow-sm"
                                                     >
                                                         Editar Necesidad
                                                     </button>
                                                     <button
                                                         onClick={() => validarNecesidad(lienzoSeleccionado.id)}
-                                                        className="w-full rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+                                                        className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
                                                     >
                                                         Validar Necesidad
                                                     </button>
