@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle } from "lucide-react";
+import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, FileBox } from "lucide-react";
 import InvestigacionFlow from "./components/InvestigacionFlow";
 import PersonasFlow from "./components/PersonasFlow";
 import HabilitacionFlow from "./components/HabilitacionFlow";
@@ -497,7 +497,7 @@ export default function Home() {
     const lista = propositos.length ? propositos : propositosFallback;
 
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/60">
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
         <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-lg">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
@@ -539,8 +539,9 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="border-b border-slate-100 bg-white/60">
-          <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="relative border-b border-slate-100 bg-white/70 overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-dots-subtle opacity-40" />
+          <div className="mx-auto max-w-6xl px-6 py-10">
             <div className="flex items-start justify-between gap-6">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
@@ -553,13 +554,20 @@ export default function Home() {
                   Selecciona el propósito que deseas trabajar. En este MVP se encuentra habilitado el Propósito 1.
                 </p>
               </div>
-              {usuario?.institucion && (
-                <div className="hidden shrink-0 rounded-2xl border border-slate-100 bg-white/80 px-5 py-4 shadow-sm sm:block">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Institución</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">{usuario.institucion}</p>
-                  {usuario.cargo && <p className="text-xs text-slate-500">{usuario.cargo}</p>}
-                </div>
-              )}
+              <div className="hidden shrink-0 items-center gap-4 sm:flex">
+                {usuario?.nombre_completo && (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 to-emerald-100 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-200/50">
+                    {usuario.nombre_completo.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {usuario?.institucion && (
+                  <div className="rounded-2xl border border-slate-100 bg-white/80 px-5 py-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Institución</p>
+                    <p className="mt-1 text-sm font-bold text-slate-800">{usuario.institucion}</p>
+                    {usuario.cargo && <p className="text-xs text-slate-500">{usuario.cargo}</p>}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -570,7 +578,7 @@ export default function Home() {
           </div>
         )}
 
-        <section className="mx-auto max-w-6xl px-6 py-10">
+        <section className="mx-auto max-w-6xl px-6 py-8">
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {lista.map((proposito, i) => (
               <PropositoCard
@@ -593,8 +601,9 @@ export default function Home() {
   const totalEtapas = rutaData?.resumen_ruta?.total_etapas ?? 7;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50">
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-lg">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+      <div className="pointer-events-none fixed inset-0 z-0 bg-dots-subtle opacity-30" />
+      <header className="relative sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-lg">
         <div className="flex flex-col gap-0 xl:flex-row xl:items-stretch">
           <div className="flex-1 px-6 py-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -690,12 +699,31 @@ export default function Home() {
       </header>
 
       {mensaje && (
-        <div className="px-6 pt-4">
+        <div className="relative z-10 px-6 pt-4">
           <MensajeAlerta mensaje={mensaje} tipo={mensajeTipo} onClose={() => setMensaje("")} />
         </div>
       )}
 
-      <section>
+      <div className="relative z-10 border-b border-slate-100 bg-white/40 px-6 py-4">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 rounded-xl border border-teal-200/50 bg-gradient-to-br from-teal-50 to-emerald-50/50 px-4 py-2.5 shadow-sm">
+            <CheckCircle className="h-4 w-4 text-teal-600" aria-hidden="true" />
+            <span className="text-xs font-semibold text-teal-800">
+              <span className="text-sm font-bold">{etapasCompletadas}</span> de {totalEtapas} etapas completadas
+            </span>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200/60 bg-white px-4 py-2.5 shadow-sm">
+            <FileText className="h-4 w-4 text-slate-600" aria-hidden="true" />
+            <span className="text-xs font-semibold text-slate-700">Evidencias registradas</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-violet-200/50 bg-gradient-to-br from-violet-50 to-purple-50/50 px-4 py-2.5 shadow-sm">
+            <Sparkles className="h-4 w-4 text-violet-600" aria-hidden="true" />
+            <span className="text-xs font-semibold text-violet-800">IA Demo activa</span>
+          </div>
+        </div>
+      </div>
+
+      <section className="relative z-10">
         {current === "investigacion" && <InvestigacionFlow />}
         {current === "personas" && <PersonasFlow />}
         {current === "habilitacion" && <HabilitacionFlow />}
@@ -848,12 +876,22 @@ function PropositoCard({
         {proposito.descripcion}
       </p>
 
-      {proposito.activo && (
-        <div className="mt-5 flex items-center gap-1 text-xs font-semibold text-teal-600">
-          Entrar al propósito
-          <span className="transition-transform duration-150 group-hover:translate-x-1">&rarr;</span>
-        </div>
-      )}
+      <div className="mt-5 flex items-center justify-between">
+        {proposito.activo ? (
+          <div className="rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 ring-1 ring-teal-100/50">
+            7 etapas · Demo IA
+          </div>
+        ) : (
+          <div className="rounded-lg bg-slate-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 ring-1 ring-slate-200/50">
+            Próximamente
+          </div>
+        )}
+        {proposito.activo && (
+          <span className="flex items-center gap-1 text-xs font-semibold text-teal-600">
+            Entrar <span className="transition-transform duration-150 group-hover:translate-x-1">&rarr;</span>
+          </span>
+        )}
+      </div>
     </button>
   );
 }

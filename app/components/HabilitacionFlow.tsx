@@ -750,6 +750,14 @@ window.dispatchEvent(
           </header>
 
           <div className="px-6 py-4">
+            <div className="mb-6 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Objetivo</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                Detectar los niveles de habilitación digital y las expectativas de las personas usuarias
+                para asegurar una experiencia alineada con sus capacidades y necesidades.
+              </p>
+            </div>
+
             <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-md shadow-slate-100/50">
               <label className="font-semibold text-lg text-slate-800">
                 Perfil de persona usuaria
@@ -785,6 +793,8 @@ window.dispatchEvent(
               )}
             </div>
 
+            <AsistenciaIAEtapa etapa={3} contexto="Habilitación y Expectativas" />
+
             <div className="mb-6 flex gap-4 border-b border-slate-200/80">
               {[
                 ["habilitacion", "Habilitación"],
@@ -812,14 +822,22 @@ window.dispatchEvent(
               </div>
             )}
 
-            <AsistenciaIAEtapa etapa={3} contexto="Habilitación y Expectativas" />
-
             {tab === "habilitacion" && (
-              <div className="space-y-6">
-                {!perfilSeleccionado ? (
-                  <p className="rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 p-4 text-sm text-slate-500 border border-slate-200/60">
-                    Selecciona un perfil arriba para registrar su habilitación.
-                  </p>
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Herramienta principal</p>
+                </div>
+                <div className="space-y-6">
+                  {!perfilSeleccionado ? (
+                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100/30 p-8 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50">
+                        <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-600">Selecciona un perfil para comenzar</p>
+                        <p className="mt-1 text-xs text-slate-400">Elige un perfil de persona usuaria en el selector superior para evaluar su habilitación.</p>
+                      </div>
+                    </div>
                 ) : (
                   <>
                     <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-md shadow-slate-100/50">
@@ -948,10 +966,15 @@ window.dispatchEvent(
                   </>
                 )}
               </div>
+            </>
             )}
 
             {tab === "expectativas" && (
-              <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Expectativas de la persona usuaria</p>
+                </div>
+                <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
                 <div className="space-y-6">
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-md shadow-slate-100/50">
                     <h2 className="text-lg font-bold tracking-tight text-slate-800">
@@ -1172,10 +1195,15 @@ window.dispatchEvent(
                   </div>
                 </aside>
               </div>
+            </>
             )}
 
             {tab === "registros" && (
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Registros guardados</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                 <h2 className="text-lg font-bold tracking-tight text-slate-800">Registros Guardados</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-500">
                   Lista de habilitaciones y expectativas por perfil de persona usuaria.
@@ -1263,8 +1291,14 @@ window.dispatchEvent(
                       })}
                       {habilitaciones.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                            No hay registros guardados.
+                          <td colSpan={5} className="px-4 py-10 text-center">
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50 mx-auto">
+                                <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
+                              </div>
+                              <p className="text-sm font-semibold text-slate-500">No hay registros guardados</p>
+                              <p className="text-xs text-slate-400">Completa la encuesta de habilitación para registrar el primer perfil.</p>
+                            </div>
                           </td>
                         </tr>
                       )}
@@ -1272,10 +1306,15 @@ window.dispatchEvent(
                   </table>
                 </div>
               </div>
+            </>
             )}
 
             {tab === "lienzo" && (
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Vista de lienzo</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-bold tracking-tight text-slate-800">
@@ -1431,7 +1470,20 @@ window.dispatchEvent(
                 </div>
                 )}
               </div>
+            </>
             )}
+
+            <div className="mt-8 rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 shadow-sm">
+                  <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600">Evidencias</p>
+                  <p className="text-xs text-slate-400">Los respaldos de esta etapa se gestionan desde la pestaña Evidencias.</p>
+                </div>
+              </div>
+            </div>
 
           </div>
         </section>

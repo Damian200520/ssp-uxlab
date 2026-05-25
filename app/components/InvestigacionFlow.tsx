@@ -690,6 +690,16 @@ export default function InvestigacionFlow({
           </header>
 
           <div className="px-6 py-6">
+            <div className="mb-6 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Objetivo</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                Levantar el contexto del servicio, definir el objetivo de investigación y planificar las
+                técnicas para comprender la experiencia de las personas usuarias.
+              </p>
+            </div>
+
+            <AsistenciaIAEtapa etapa={1} contexto="Investigación" />
+
             <div className="mb-6 flex gap-6 border-b border-slate-200/80">
               {[
                 ["formulario", "Formulario"],
@@ -711,8 +721,6 @@ export default function InvestigacionFlow({
               ))}
             </div>
 
-            <AsistenciaIAEtapa etapa={1} contexto="Investigación" />
-
             {message && (
               <div className="mb-4 rounded-xl border border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-3 text-sm text-teal-800 shadow-sm">
                 {message}
@@ -720,7 +728,11 @@ export default function InvestigacionFlow({
             )}
 
             {tab === "formulario" && (
-              <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Herramienta principal</p>
+                </div>
+                <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
                 <div className="space-y-6">
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                     <h2 className="text-xl font-bold tracking-tight">
@@ -905,10 +917,15 @@ export default function InvestigacionFlow({
                   </div>
                 </aside>
               </div>
+            </>
             )}
 
             {tab === "registros" && (
-              <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Registros guardados</p>
+                </div>
+                <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-xl font-bold tracking-tight">
@@ -930,9 +947,15 @@ export default function InvestigacionFlow({
 
                   <div className="mt-6 space-y-4">
                     {investigaciones.length === 0 && (
-                      <p className="rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 p-4 text-sm text-slate-500 border border-slate-200/60">
-                        Aún no hay planes de investigación guardados.
-                      </p>
+                      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100/30 p-8 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50">
+                          <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-600">Aún no hay planes de investigación guardados</p>
+                          <p className="mt-1 text-xs text-slate-400">Completa el formulario y guarda tu primer plan para comenzar.</p>
+                        </div>
+                      </div>
                     )}
 
                     {investigaciones.map((item) => (
@@ -1143,15 +1166,26 @@ export default function InvestigacionFlow({
                   </div>
                 </aside>
               </div>
+            </>
             )}
 
             {tab === "lienzo" && (
-              <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
-                  {!lienzo ? (
-                    <p className="text-sm text-slate-500">
-                      No hay datos para generar el lienzo.
-                    </p>
+              <>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Vista de lienzo</p>
+                </div>
+                <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
+                    {!lienzo ? (
+                      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100/30 p-8 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50">
+                          <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-600">No hay datos para generar el lienzo</p>
+                          <p className="mt-1 text-xs text-slate-400">Completa el formulario y guarda los datos para visualizar el resumen.</p>
+                        </div>
+                      </div>
                   ) : (
                     <>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -1357,7 +1391,20 @@ export default function InvestigacionFlow({
                 </aside>
 
               </div>
+            </>
             )}
+
+            <div className="mt-8 rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 shadow-sm">
+                  <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600">Evidencias</p>
+                  <p className="text-xs text-slate-400">Los respaldos de esta etapa se gestionan desde la pestaña Evidencias.</p>
+                </div>
+              </div>
+            </div>
 
           </div>
         </section>

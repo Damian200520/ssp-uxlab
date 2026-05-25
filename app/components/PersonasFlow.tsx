@@ -439,6 +439,16 @@ async function validarPerfil(id: string) {
                     </header>
 
                     <div className="px-6 py-6">
+                        <div className="mb-6 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Objetivo</p>
+                            <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                                Identificar y caracterizar los perfiles de personas usuarias del servicio, documentando
+                                su relación, nivel digital, canales, expectativas y barreras.
+                            </p>
+                        </div>
+
+                        <AsistenciaIAEtapa etapa={2} contexto="Personas" />
+
                         <div className="mb-6 flex gap-6 border-b border-slate-200/80">
                             {(
                                 [
@@ -460,10 +470,12 @@ async function validarPerfil(id: string) {
                             ))}
                         </div>
 
-                        <AsistenciaIAEtapa etapa={2} contexto="Personas" />
-
                         {tab === "formulario" && (
-                            <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
+                            <>
+                                <div className="mb-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Herramienta principal</p>
+                                </div>
+                                <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
                                 <div className="space-y-6">
                                     <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                                         <h2 className="text-xl font-bold tracking-tight">
@@ -705,16 +717,27 @@ async function validarPerfil(id: string) {
                                     </div>
                                 </aside>
                             </div>
+                        </>
                         )}
 
                         {tab === "registros" && (
-                            <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+                            <>
+                                <div className="mb-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Registros guardados</p>
+                                </div>
+                                <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
                                 <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                                     <h2 className="text-xl font-bold tracking-tight mb-6">Perfiles de persona guardados</h2>
                                     {perfiles.length === 0 ? (
-                                        <p className="text-sm text-slate-400 text-center py-10">
-                                            Aún no hay perfiles guardados. Crea el primero desde el formulario.
-                                        </p>
+                                        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100/30 p-8 text-center">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50">
+                                                <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-600">Aún no hay perfiles guardados</p>
+                                                <p className="mt-1 text-xs text-slate-400">Completa el formulario y guarda tu primer perfil de persona usuaria.</p>
+                                            </div>
+                                        </div>
                                     ) : (
                                         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                                             {perfiles.map((p) => (
@@ -802,10 +825,15 @@ async function validarPerfil(id: string) {
                                     </div>
                                 </aside>
                             </div>
+                        </>
                         )}
 
                         {tab === "lienzo" && (
-                            <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+                            <>
+                                <div className="mb-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Vista de lienzo</p>
+                                </div>
+                                <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
                                 <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-md shadow-slate-100/50">
                                     {!lienzoSeleccionado ? (
                                         <p className="text-sm text-slate-500 text-center py-10">
@@ -945,7 +973,21 @@ async function validarPerfil(id: string) {
                                     </div>
                                 </aside>
                             </div>
+                        </>
                         )}
+
+                        <div className="mt-8 rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 shadow-sm">
+                                    <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-600">Evidencias</p>
+                                    <p className="text-xs text-slate-400">Los respaldos de esta etapa se gestionan desde la pestaña Evidencias.</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </section>
             </div>

@@ -46,24 +46,32 @@ export default function AsistenciaIAEtapa({ etapa, contexto = "" }: Props) {
   }
 
   return (
-    <div className="mb-6 rounded-2xl border border-violet-200/60 bg-gradient-to-r from-violet-50/60 to-purple-50/60 p-5 shadow-sm">
+    <div className="mb-6 rounded-2xl border border-violet-200/50 bg-gradient-to-br from-violet-50/80 via-white to-purple-50/40 p-5 shadow-sm ring-1 ring-violet-100/30">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">
-            Asistencia metodológica
-          </p>
-          <p className="mt-0.5 text-xs text-violet-500">UXLab AI</p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 shadow-sm ring-1 ring-violet-200/50">
+            <Sparkles className="h-4 w-4 text-violet-700" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">
+              Asistencia metodológica
+            </p>
+            <p className="text-[11px] text-violet-500">UXLab AI</p>
+          </div>
         </div>
         <button
           type="button"
           onClick={mostrarSugerencia}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all duration-150 hover:from-violet-700 hover:to-purple-800 hover:shadow-md disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all duration-150 hover:from-violet-700 hover:to-purple-800 hover:shadow-md active:scale-[0.97] disabled:opacity-50"
         >
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
           {loading ? "Cargando..." : "Mostrar sugerencia"}
         </button>
       </div>
+
+      <p className="mt-4 text-xs leading-relaxed text-slate-500">
+        Recibe sugerencias metodológicas basadas en la etapa actual del propósito.
+      </p>
 
       {error && (
         <div className="mt-4 rounded-xl border border-red-200/60 bg-gradient-to-r from-red-50 to-rose-50 p-3 text-sm text-red-800">
@@ -72,7 +80,7 @@ export default function AsistenciaIAEtapa({ etapa, contexto = "" }: Props) {
       )}
 
       {resultado && (
-        <div className="mt-4 rounded-xl border border-violet-200/60 bg-white p-4 shadow-sm">
+        <div className="mt-4 rounded-xl border border-violet-200/50 bg-white p-4 shadow-sm">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-violet-700">
               Sugerencia

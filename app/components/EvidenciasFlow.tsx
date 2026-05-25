@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, FileBox } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -467,8 +467,12 @@ export default function EvidenciasFlow() {
 
             <div className="space-y-3">
               {evidenciasFiltradas.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100/30 p-6 text-center text-sm text-slate-500">
-                  Aún no hay evidencias registradas para este filtro.
+                <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100/30 p-8 text-center">
+                  <FileBox className="h-10 w-10 text-slate-300" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-600">Aún no hay evidencias registradas</p>
+                    <p className="mt-1 text-xs text-slate-400">Completa el formulario de la izquierda para agregar una evidencia a esta etapa.</p>
+                  </div>
                 </div>
               )}
 
@@ -542,6 +546,9 @@ export default function EvidenciasFlow() {
             </div>
 
             <div className="mt-6 border-t border-slate-100 pt-6">
+              <p className="mb-3 text-xs text-slate-500 leading-relaxed">
+                Genera una síntesis preliminar de las evidencias cargadas para apoyar el informe del proyecto.
+              </p>
               <button
                 type="button"
                 onClick={generarSintesisIA}
