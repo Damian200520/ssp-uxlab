@@ -704,19 +704,28 @@ async def obtener_ruta_proyecto(proyecto_id: str):
 
 @app.patch("/proyectos/{proyecto_id}/ruta/avanzar")
 async def avanzar_ruta_proyecto(proyecto_id: str):
-    proyecto = await crud.avanzar_ruta_proposito_1(proyecto_id)
+    resultado = await crud.avanzar_ruta_proposito_1(proyecto_id)
 
-    if not proyecto:
+    if not resultado:
         return {
             "message": "No se encontró el proyecto solicitado para avanzar la ruta",
             "data": None,
         }
 
+    if resultado.get("bloqueado"):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": resultado["message"],
+                "ruta_actualizada": resultado["ruta_actualizada"],
+            },
+        )
+
     ruta_actualizada = await crud.obtener_ruta_proposito_1(proyecto_id)
 
     return {
         "message": "Ruta del proyecto avanzada correctamente",
-        "proyecto": proyecto,
+        "proyecto": resultado,
         "ruta_actualizada": ruta_actualizada,
     }
 
@@ -834,5 +843,4 @@ async def ia_mejorar_redaccion(data: IAMejoraRedaccionRequest):
         "modo": ai_service.MODO,
         "resultado": resultado,
     }
-
 

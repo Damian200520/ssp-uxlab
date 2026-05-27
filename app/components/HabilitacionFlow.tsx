@@ -14,6 +14,7 @@ type HabilitacionMeta = {
   facilitadores: string;
   observaciones: string;
   estado?: string;
+  validado_ruta?: boolean;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -108,7 +109,8 @@ function createInitialHabilitacionForm(): HabilitacionForm {
 function serializarDescripcionHabilitacion(
   form: HabilitacionForm,
   persona_usuaria_id = "",
-  estado = "borrador"
+  estado = "borrador",
+  validado_ruta = false
 ): string {
   const meta: HabilitacionMeta = {
     persona_usuaria_id,
@@ -117,6 +119,7 @@ function serializarDescripcionHabilitacion(
     facilitadores: form.facilitadores,
     observaciones: form.observaciones,
     estado,
+    validado_ruta,
   };
   return `${HAB_META_PREFIX}${JSON.stringify(meta)}`;
 }
@@ -672,7 +675,8 @@ export default function HabilitacionFlow({
           descripcion_habilitacion: serializarDescripcionHabilitacion(
             formHab,
             hab.persona_usuaria_id,
-            "validado"
+            "validado",
+            true
           ),
         })
         .eq("id", id);
@@ -732,11 +736,13 @@ window.dispatchEvent(
           <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="inline-flex rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm shadow-sm">
+                <div className="inline-flex rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-2 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
                   Propósito 1 · Diseñar servicios centrados en las personas
                 </div>
 
-                <h1 className="mt-6 text-4xl font-bold tracking-tight">
+                <div className="mt-5 h-1 w-16 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400" />
+
+                <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">
                   Habilitación y Expectativas
                 </h1>
 

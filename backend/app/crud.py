@@ -1746,6 +1746,40 @@ ETAPAS_PROPOSITO_1 = [
     },
 ]
 
+ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1 = 4
+
+REQUISITOS_RUTA_PROPOSITO_1 = {
+    1: "Validar al menos un plan de investigación.",
+    2: "Validar al menos un perfil de persona usuaria.",
+    3: "Registrar habilitación y expectativas asociadas.",
+    4: "Registrar al menos una necesidad validada.",
+    5: "Registrar vinculaciones entre necesidades y actividades del servicio.",
+    6: "Definir indicadores o evidencias de medición.",
+    7: "Registrar momentos críticos del recorrido.",
+}
+
+
+def _normalizar_etapa_actual(etapa_actual):
+    if not etapa_actual:
+        return 1
+
+    return max(1, min(int(etapa_actual), ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1))
+
+
+def _obtener_hito_ruta(etapas_completadas):
+    completadas = set(etapas_completadas)
+
+    if {1, 2, 3, 4}.issubset(completadas):
+        return "Hito 2 completado: diagnóstico metodológico base registrado hasta Necesidades."
+
+    if {1, 2}.issubset(completadas):
+        return "Hito 2 en curso avanzado: investigación y personas usuarias registradas."
+
+    if 1 in completadas:
+        return "Hito 1 completado: investigación inicial registrada."
+
+    return "Ruta inicial: completar la investigación para habilitar el avance."
+
 
 async def obtener_ruta_proposito_1(proyecto_id: str):
     conn = await get_connection()
@@ -1786,7 +1820,7 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
             proyecto_id,
         )
 
-        etapa_actual = proyecto["etapa_actual"] or 1
+        etapa_actual = _normalizar_etapa_actual(proyecto["etapa_actual"])
 
         completitud = {
     # Investigación se considera completa solo si existe un plan validado/completado
@@ -1817,8 +1851,18 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
         proyecto_id,
     ),
 
-    # Habilitación y expectativas por ahora se considera completa si existen ambos registros
-    3: conteos["total_habilitacion"] > 0 and conteos["total_expectativas"] > 0,
+    # Habilitación y expectativas solo se considera completa con una validación de ruta nueva.
+    3: await conn.fetchval(
+        """
+        select count(*) > 0
+        from habilitacion
+        where proyecto_id = $1::uuid
+        and descripcion_habilitacion like '::uxlab-hab-meta::%%'
+        and position('"estado":"validado"' in descripcion_habilitacion) > 0
+        and position('"validado_ruta":true' in descripcion_habilitacion) > 0;
+        """,
+        proyecto_id,
+    ),
 
     # Necesidades se considera completa si existe una necesidad validada
     4: await conn.fetchval(
@@ -1861,20 +1905,34 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
             },
         }
 
+        total_etapas = len(ETAPAS_PROPOSITO_1)
+        etapa_actual_completada = bool(completitud.get(etapa_actual))
+        puede_avanzar = etapa_actual < ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1 and etapa_actual_completada
+        requisito_actual = REQUISITOS_RUTA_PROPOSITO_1.get(etapa_actual)
+        bloqueo_avance = None
+
+        if etapa_actual >= ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1:
+            bloqueo_avance = "El alcance actual de la plataforma llega hasta Necesidades."
+        elif not etapa_actual_completada:
+            bloqueo_avance = requisito_actual
+
         ruta = []
 
         for etapa in ETAPAS_PROPOSITO_1:
             numero = etapa["numero"]
             completada = completitud[numero]
+            es_actual = numero == etapa_actual
 
-            if numero == etapa_actual:
+            if es_actual:
                 estado_ruta = "actual"
             elif completada:
                 estado_ruta = "completada"
             elif numero < etapa_actual:
                 estado_ruta = "incompleta"
+            elif numero == etapa_actual + 1 and puede_avanzar:
+                estado_ruta = "disponible"
             else:
-                estado_ruta = "pendiente"
+                estado_ruta = "bloqueada"
 
             ruta.append(
                 {
@@ -1884,8 +1942,11 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
                     "descripcion": etapa["descripcion"],
                     "estado_ruta": estado_ruta,
                     "completada": completada,
-                    "es_actual": numero == etapa_actual,
+                    "es_actual": es_actual,
                     "conteos": detalle_conteos[numero],
+                    "requisito": REQUISITOS_RUTA_PROPOSITO_1.get(numero),
+                    "puede_abrirse": completada or numero <= etapa_actual or estado_ruta == "disponible",
+                    "puede_avanzar_desde_aqui": es_actual and puede_avanzar,
                 }
             )
 
@@ -1900,11 +1961,10 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
         siguiente_etapa = None
 
         for etapa in ruta:
-            if not etapa["completada"]:
+            if etapa["numero"] > etapa_actual:
                 siguiente_etapa = etapa
                 break
 
-        total_etapas = len(ETAPAS_PROPOSITO_1)
         total_completadas = len(etapas_completadas)
 
         porcentaje_completitud = round(
@@ -1928,6 +1988,10 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
                 "porcentaje_completitud": porcentaje_completitud,
                 "porcentaje_avance_por_etapa_actual": porcentaje_avance_por_etapa_actual,
                 "siguiente_etapa_sugerida": siguiente_etapa,
+                "puede_avanzar": puede_avanzar,
+                "bloqueo_avance": bloqueo_avance,
+                "requisito_etapa_actual": requisito_actual,
+                "hito_actual": _obtener_hito_ruta(etapas_completadas),
             },
             "ruta": ruta,
         }
@@ -1937,28 +2001,26 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
 
 
 async def avanzar_ruta_proposito_1(proyecto_id: str):
+    ruta_actual = await obtener_ruta_proposito_1(proyecto_id)
+
+    if not ruta_actual:
+        return None
+
+    resumen = ruta_actual["resumen_ruta"]
+
+    if not resumen["puede_avanzar"]:
+        return {
+            "bloqueado": True,
+            "message": resumen["bloqueo_avance"] or "La etapa actual aún no cumple los requisitos de avance.",
+            "ruta_actualizada": ruta_actual,
+        }
+
+    etapa_actual = resumen["etapa_actual"]
+    nueva_etapa = min(etapa_actual + 1, ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1)
+
     conn = await get_connection()
 
     try:
-        proyecto_actual = await conn.fetchrow(
-            """
-            select
-                id::text,
-                etapa_actual
-            from proyecto
-            where id = $1::uuid;
-            """,
-            proyecto_id,
-        )
-
-        if not proyecto_actual:
-            return None
-
-        etapa_actual = proyecto_actual["etapa_actual"] or 1
-        nueva_etapa = etapa_actual + 1
-
-        if nueva_etapa > 7:
-            nueva_etapa = 7
 
         proyecto_actualizado = await conn.fetchrow(
             """

@@ -6,7 +6,7 @@ Plataforma web para digitalizar y guiar el recorrido metodológico del Propósit
 
 ## Objetivo del MVP
 
-Permitir que equipos de servicios públicos registren información metodológica por etapa, visualicen resultados, gestionen evidencias y cuenten con apoyo de asistencia IA en modo demostrativo, todo dentro de un entorno digital alineado con la Guía UXLab.
+Permitir que equipos de servicios públicos registren información metodológica por etapa, visualicen resultados, gestionen evidencias y cuenten con apoyo de asistencia IA en modo demostrativo, alcance validado con UXLab para el MVP, todo dentro de un entorno digital alineado con la Guía UXLab.
 
 ## Tecnologías
 
@@ -103,12 +103,12 @@ El backend se ejecuta en [http://localhost:8000](http://localhost:8000). La docu
 
 ## IA demo
 
-Actualmente el módulo de inteligencia artificial opera en **modo demo** (`IA_MODO=demo`). Esto significa que:
+Actualmente el módulo de inteligencia artificial opera en **modo demo** (`IA_MODO=demo`). Este alcance fue acordado con UXLab como contraparte del proyecto, por lo que la IA se presenta como una demostración funcional de apoyo metodológico y no como una integración productiva con un proveedor externo. Esto significa que:
 
 - No requiere API key ni genera costos.
 - Las respuestas son plantillas de texto predefinidas con consejos metodológicos.
-- La arquitectura (servicio separado `ai_service.py`, endpoints dedicados, frontend conectado) queda preparada para integrar una API real (OpenAI, Claude, etc.) si UXLab lo autoriza en el futuro.
-- En una etapa posterior, si UXLab autoriza el uso de una cuenta/API institucional, se podrá incorporar un modo real de IA mediante una variable como `IA_MODO=openai` y las credenciales correspondientes, manteniendo la lógica encapsulada en `ai_service.py`.
+- La arquitectura (servicio separado `ai_service.py`, endpoints dedicados, frontend conectado) permite demostrar el flujo completo de asistencia IA sin depender de servicios externos.
+- La integración con una API real de IA queda fuera del alcance actual del MVP, salvo que UXLab defina explícitamente un nuevo requerimiento en una etapa posterior.
 
 ## Seguridad
 
@@ -123,7 +123,7 @@ Actualmente el módulo de inteligencia artificial opera en **modo demo** (`IA_MO
 - Migrar las consultas directas a Supabase desde los componentes frontend hacia el backend FastAPI.
 - Extraer componentes duplicados (sidebar, toasts, tab bar) para reducir código repetido.
 - Implementar autenticación real (JWT / Supabase Auth).
-- Evaluar integración real con IA (OpenAI, Claude u otro proveedor).
+- Mantener documentado el alcance demo de IA validado con UXLab.
 - Agregar pruebas automatizadas (frontend y backend).
 - Agregar Error Boundaries para evitar crashes totales de la interfaz.
 - Mejorar estados de carga con skeleton loaders.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, FileBox } from "lucide-react";
+import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, FileBox, RefreshCw, ArrowRight, ArrowLeft, Loader2, Lock } from "lucide-react";
 import InvestigacionFlow from "./components/InvestigacionFlow";
 import PersonasFlow from "./components/PersonasFlow";
 import HabilitacionFlow from "./components/HabilitacionFlow";
@@ -49,6 +49,9 @@ type RutaEtapa = {
   completada: boolean;
   es_actual: boolean;
   conteos: Record<string, number>;
+  requisito?: string;
+  puede_abrirse?: boolean;
+  puede_avanzar_desde_aqui?: boolean;
 };
 
 type RutaResponse = {
@@ -63,6 +66,11 @@ type RutaResponse = {
     total_etapas_completadas: number;
     porcentaje_completitud: number;
     porcentaje_avance_por_etapa_actual: number;
+    siguiente_etapa_sugerida?: RutaEtapa | null;
+    puede_avanzar?: boolean;
+    bloqueo_avance?: string | null;
+    requisito_etapa_actual?: string | null;
+    hito_actual?: string;
   };
   ruta: RutaEtapa[];
 };
@@ -376,7 +384,19 @@ export default function Home() {
       const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/ruta/avanzar`, {
         method: "PATCH",
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorPayload = await res.json().catch(() => null);
+        const detail = errorPayload?.detail;
+
+        if (res.status === 409 && detail?.ruta_actualizada) {
+          setRutaData(detail.ruta_actualizada);
+          setMensajeTipo("warning");
+          setMensaje(detail.message || "La etapa actual aún no cumple los requisitos para avanzar.");
+          return;
+        }
+
+        throw new Error(detail?.message || errorPayload?.message || "No se pudo avanzar la ruta.");
+      }
       const json = await res.json();
       const rutaActualizada = json.ruta_actualizada;
       setRutaData(rutaActualizada);
@@ -403,28 +423,48 @@ export default function Home() {
   // VISTA: ACCESO
   if (vista === "acceso") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-teal-50/40 to-emerald-50/40 px-4">
-        <div className="pointer-events-none fixed inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-teal-100/40 to-emerald-100/30 blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 h-[400px] w-[400px] rounded-full bg-gradient-to-tr from-cyan-100/30 to-teal-100/20 blur-3xl" />
-        </div>
+      <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
+        <section className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-teal-100 bg-white px-3.5 py-2 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-teal-600" />
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800">SSP · UXLab</span>
+            </div>
 
-        <section className="relative w-full max-w-md">
-          <div className="mb-8 text-center">
-            <div className="inline-flex items-center gap-3 rounded-2xl bg-white/80 px-5 py-2.5 shadow-lg shadow-teal-200/20 ring-1 ring-slate-200/60 backdrop-blur-sm">
-              <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 shadow-sm" />
-              <span className="text-sm font-bold tracking-[0.15em] text-slate-800 uppercase">SSP · UXLab</span>
+            <p className="mt-8 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Propósito 1 · Experiencia usuaria
+            </p>
+            <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+              Plataforma de apoyo metodológico para servicios públicos
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
+              Un entorno digital para registrar información, ordenar evidencias y acompañar el avance del recorrido metodológico definido junto a UXLab.
+            </p>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Alcance</p>
+                <p className="mt-1 text-sm font-bold text-slate-800">MVP validado</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Ruta</p>
+                <p className="mt-1 text-sm font-bold text-slate-800">7 etapas</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">IA</p>
+                <p className="mt-1 text-sm font-bold text-slate-800">Demo metodológica</p>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-slate-200/70 ring-1 ring-slate-200/60">
-            <div className="mb-7">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60">
+            <div className="mb-6 border-b border-slate-100 pb-5">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">Ingreso al entorno</p>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
                 Acceso a la plataforma
-              </h1>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                Ingresa tus datos para acceder al entorno de trabajo UXLab
-                y comenzar la digitalización de herramientas.
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Ingresa tus datos para continuar al espacio de trabajo del proyecto.
               </p>
             </div>
 
@@ -468,25 +508,25 @@ export default function Home() {
               type="button"
               onClick={ingresarUsuario}
               disabled={loading}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal-200/50 transition-all duration-200 hover:from-teal-700 hover:to-emerald-700 hover:shadow-xl hover:shadow-teal-300/50 active:scale-[0.98] disabled:opacity-50"
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-teal-800 hover:shadow-md active:scale-[0.99] disabled:opacity-50"
             >
               {loading ? (
                 <>
-                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Ingresando...
                 </>
               ) : (
-                <>Ingresar a la plataforma <span className="ml-1">&rarr;</span></>
+                <>
+                  Ingresar a la plataforma
+                  <ArrowRight className="h-4 w-4" />
+                </>
               )}
             </button>
-          </div>
 
-          <p className="mt-5 text-center text-xs text-slate-400">
-            Plataforma de diagnóstico UX para servicios públicos
-          </p>
+            <p className="mt-4 text-center text-xs text-slate-400">
+              Acceso de demostración para revisión del MVP.
+            </p>
+          </div>
         </section>
       </main>
     );
@@ -516,9 +556,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={cargarRuta}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-sm"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-sm"
               >
-                \u21BA Actualizar
+                <RefreshCw className="h-3.5 w-3.5" />
+                Actualizar
               </button>
               <button
                 type="button"
@@ -599,6 +640,19 @@ export default function Home() {
   const etapaActiva = ruta.find((e) => flujoDesdeEtapa(e) === current);
   const etapasCompletadas = rutaData?.resumen_ruta?.total_etapas_completadas ?? 0;
   const totalEtapas = rutaData?.resumen_ruta?.total_etapas ?? 7;
+  const resumenRuta = rutaData?.resumen_ruta;
+  const siguienteEtapa = resumenRuta?.siguiente_etapa_sugerida || ruta.find((etapa) => etapaActiva && etapa.numero > etapaActiva.numero);
+  const puedeAvanzar = resumenRuta?.puede_avanzar ?? false;
+  const requisitoEtapaActual = !rutaData
+    ? "Actualiza la ruta para sincronizar el avance con el backend."
+    : resumenRuta?.requisito_etapa_actual || etapaActiva?.requisito;
+  const estadoEtapaActiva = etapaActiva?.completada
+    ? "Lista para avanzar"
+    : !rutaData
+    ? "Pendiente de sincronización"
+    : etapaActiva?.estado_ruta === "incompleta"
+    ? "Requiere revisión"
+    : "En desarrollo";
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
@@ -612,7 +666,8 @@ export default function Home() {
                 onClick={() => setVista("propositos")}
                 className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
               >
-                \u2190 Propósitos
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Propósitos
               </button>
               <span className="text-slate-300">/</span>
               <span className="rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-1.5 text-xs font-bold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
@@ -720,6 +775,52 @@ export default function Home() {
             <Sparkles className="h-4 w-4 text-violet-600" aria-hidden="true" />
             <span className="text-xs font-semibold text-violet-800">IA Demo activa</span>
           </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 border-b border-slate-100 bg-white px-6 py-4">
+        <div className="mx-auto grid max-w-7xl gap-3 lg:grid-cols-[1.1fr_1fr_auto] lg:items-center">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Motor de ruta</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-sm font-bold text-slate-900">
+                Etapa actual: {etapaActiva?.nombre || "Investigación"}
+              </span>
+              <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                etapaActiva?.completada
+                  ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
+                  : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
+              }`}>
+                {estadoEtapaActiva}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              {resumenRuta?.hito_actual || "La ruta se actualiza según los registros metodológicos guardados."}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-semibold text-slate-500">
+              {puedeAvanzar ? "Siguiente etapa sugerida" : "Requisito para avanzar"}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-800">
+              {!rutaData
+                ? requisitoEtapaActual
+                : puedeAvanzar
+                ? siguienteEtapa?.nombre || "Alcance actual completo"
+                : resumenRuta?.bloqueo_avance || requisitoEtapaActual || "Completa la etapa actual."}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={avanzarSiguienteEtapa}
+            disabled={loading || !puedeAvanzar}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-3 text-xs font-bold text-white shadow-sm transition-all duration-150 hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+          >
+            {loading ? "Actualizando..." : "Avanzar etapa"}
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -911,9 +1012,14 @@ function EtapaTab({
     ? "completada"
     : etapa.es_actual || etapa.estado_ruta === "actual"
     ? "actual"
+    : etapa.estado_ruta === "disponible"
+    ? "disponible"
+    : etapa.estado_ruta === "incompleta"
+    ? "incompleta"
     : "pendiente";
 
-  const isPending = !activa && estado === "pendiente";
+  const isLocked = !activa && estado === "pendiente";
+  const isReview = estado === "incompleta";
 
   return (
     <button
@@ -922,20 +1028,22 @@ function EtapaTab({
       className={`group flex min-w-[148px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 ${
         activa
           ? "border-teal-600 bg-white shadow-sm"
-          : isPending
-          ? "border-transparent"
+          : isLocked
+          ? "border-transparent bg-slate-50/60"
+          : isReview
+          ? "border-transparent bg-amber-50/40 hover:border-amber-200 hover:bg-amber-50"
           : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
       }`}
     >
       <div className="flex items-center gap-2">
         <span className={
-          activa ? "text-teal-700" : isPending ? "text-slate-400" : "text-slate-600 group-hover:text-slate-900"
+          activa ? "text-teal-700" : isLocked ? "text-slate-400" : isReview ? "text-amber-600" : "text-slate-600 group-hover:text-slate-900"
         }>
           {icono}
         </span>
         <span
           className={`text-xs font-semibold transition-colors duration-150 ${
-            activa ? "text-slate-900" : isPending ? "text-slate-500" : "text-slate-700 group-hover:text-slate-900"
+            activa ? "text-slate-900" : isLocked ? "text-slate-500" : isReview ? "text-amber-800" : "text-slate-700 group-hover:text-slate-900"
           }`}
         >
           {etapa.nombre}
@@ -947,6 +1055,14 @@ function EtapaTab({
         )}
         {estado === "actual" && !activa && (
           <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 shadow-sm" />
+        )}
+        {estado === "disponible" && (
+          <span className="ml-auto rounded-full bg-teal-50 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 ring-1 ring-teal-100">
+            Sigue
+          </span>
+        )}
+        {isLocked && (
+          <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-300" />
         )}
       </div>
       <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">{etapa.descripcion}</p>
