@@ -1,8 +1,8 @@
-import './globals.css';
+import "./globals.css";
 
 export const metadata = {
-  title: 'Plataforma SSP',
-  description: 'Prototipo UXLab - Propósito 1',
+  title: "Plataforma Web SSP-UXLab",
+  description: "MVP metodológico para el Propósito 1 de la guía UXLab",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="scroll-smooth">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

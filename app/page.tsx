@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, FileBox, RefreshCw, ArrowRight, ArrowLeft, Loader2, Lock } from "lucide-react";
+import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, ArrowRight, ArrowLeft, Loader2, Lock, CalendarDays } from "lucide-react";
 import InvestigacionFlow from "./components/InvestigacionFlow";
 import PersonasFlow from "./components/PersonasFlow";
 import HabilitacionFlow from "./components/HabilitacionFlow";
 import NecesidadesFlow from "./components/NecesidadesFlow";
 import EvidenciasFlow from "./components/EvidenciasFlow";
+import CatalogoHerramientasProp1 from "./components/CatalogoHerramientasProp1";
+import CalendarizacionProp1 from "./components/CalendarizacionProp1";
+import type { FlujoHerramienta } from "./data/herramientasProp1";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const PROYECTO_ID =
@@ -16,10 +19,12 @@ const PROYECTO_ID =
 type Vista = "acceso" | "propositos" | "proposito1";
 
 type FlujoActivo =
+  | "catalogo"
   | "investigacion"
   | "personas"
   | "habilitacion"
   | "necesidades"
+  | "calendarizacion"
   | "evidencias"
   | "vinculacion"
   | "medicion"
@@ -158,6 +163,19 @@ function flujoDesdeEtapa(etapa: RutaEtapa): FlujoActivo {
   return "momentos";
 }
 
+function numeroDesdeFlujo(flujo: FlujoActivo) {
+  if (flujo === "catalogo") return null;
+  if (flujo === "investigacion") return 1;
+  if (flujo === "personas") return 2;
+  if (flujo === "habilitacion") return 3;
+  if (flujo === "necesidades") return 4;
+  if (flujo === "calendarizacion") return null;
+  if (flujo === "vinculacion") return 5;
+  if (flujo === "medicion") return 6;
+  if (flujo === "momentos") return 7;
+  return null;
+}
+
 const etapaIcono: Record<string, React.ReactNode> = {
   investigacion: <Search className="h-5 w-5" strokeWidth={2.2} />,
   personas: <Users className="h-5 w-5" strokeWidth={2.2} />,
@@ -173,7 +191,7 @@ const propositosFallback: Proposito[] = [
     id: 1,
     titulo: "Comprender la experiencia actual",
     descripcion:
-      "Contar con un diagnóstico claro para individualizar desafíos y comprender la experiencia real de las personas usuarias.",
+      "Permite levantar información inicial, caracterizar personas usuarias, identificar expectativas, necesidades, vínculos, mediciones y momentos críticos de la experiencia.",
     activo: true,
   },
   {
@@ -210,7 +228,7 @@ const propositoIconos = [<Compass key="c1" className="h-5 w-5" strokeWidth={2.2}
 
 export default function Home() {
   const [vista, setVista] = useState<Vista>("acceso");
-  const [current, setCurrent] = useState<FlujoActivo>("investigacion");
+  const [current, setCurrent] = useState<FlujoActivo>("catalogo");
 
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [propositos, setPropositos] = useState<Proposito[]>([]);
@@ -359,7 +377,7 @@ export default function Home() {
     localStorage.removeItem("ssp_uxlab_usuario");
     setUsuario(null);
     setVista("acceso");
-    setCurrent("investigacion");
+    setCurrent("catalogo");
   }
 
   function seleccionarProposito(proposito: Proposito) {
@@ -370,64 +388,50 @@ export default function Home() {
     }
     setMensaje("");
     setVista("proposito1");
-    setCurrent("investigacion");
+    setCurrent("catalogo");
   }
 
   function irAEtapa(etapa: RutaEtapa) {
     setCurrent(flujoDesdeEtapa(etapa));
   }
 
-  async function avanzarSiguienteEtapa() {
-    try {
-      setLoading(true);
-      setMensaje("");
-      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/ruta/avanzar`, {
-        method: "PATCH",
-      });
-      if (!res.ok) {
-        const errorPayload = await res.json().catch(() => null);
-        const detail = errorPayload?.detail;
-
-        if (res.status === 409 && detail?.ruta_actualizada) {
-          setRutaData(detail.ruta_actualizada);
-          setMensajeTipo("warning");
-          setMensaje(detail.message || "La etapa actual aún no cumple los requisitos para avanzar.");
-          return;
-        }
-
-        throw new Error(detail?.message || errorPayload?.message || "No se pudo avanzar la ruta.");
-      }
-      const json = await res.json();
-      const rutaActualizada = json.ruta_actualizada;
-      setRutaData(rutaActualizada);
-      const etapaActual = rutaActualizada?.proyecto?.etapa_actual;
-      if (etapaActual === 1) setCurrent("investigacion");
-      if (etapaActual === 2) setCurrent("personas");
-      if (etapaActual === 3) setCurrent("habilitacion");
-      if (etapaActual === 4) setCurrent("necesidades");
-      if (etapaActual === 5) setCurrent("vinculacion");
-      if (etapaActual === 6) setCurrent("medicion");
-      if (etapaActual === 7) setCurrent("momentos");
-      await cargarRuta();
-      setMensajeTipo("success");
-      setMensaje("Se avanzó a la siguiente etapa correctamente.");
-    } catch (error) {
-      console.error("Error al avanzar etapa:", error);
-      setMensajeTipo("error");
-      setMensaje("No se pudo avanzar a la siguiente etapa.");
-    } finally {
-      setLoading(false);
+  function navegarFlujo(route: string | null) {
+    if (!route) {
+      setCurrent("catalogo");
+      return;
     }
+
+    if (
+      route === "investigacion" ||
+      route === "personas" ||
+      route === "habilitacion" ||
+      route === "necesidades" ||
+      route === "calendarizacion" ||
+      route === "evidencias" ||
+      route === "vinculacion" ||
+      route === "medicion" ||
+      route === "momentos"
+    ) {
+      setCurrent(route);
+      return;
+    }
+
+    setMensajeTipo("warning");
+    setMensaje("Esta herramienta está planificada para una iteración posterior.");
+  }
+
+  function abrirHerramienta(flujo: FlujoHerramienta) {
+    navegarFlujo(flujo);
   }
 
   // VISTA: ACCESO
   if (vista === "acceso") {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
+      <main className="ux-shell px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
         <section className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="max-w-2xl">
+          <div className="max-w-2xl ux-reveal">
             <div className="inline-flex items-center gap-2 rounded-lg border border-teal-100 bg-white px-3.5 py-2 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-teal-600" />
+              <span className="ux-status-dot h-2 w-2 rounded-full bg-teal-600" />
               <span className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800">SSP · UXLab</span>
             </div>
 
@@ -442,22 +446,22 @@ export default function Home() {
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <div className="ux-card rounded-lg px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Alcance</p>
                 <p className="mt-1 text-sm font-bold text-slate-800">MVP validado</p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <div className="ux-card rounded-lg px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Ruta</p>
                 <p className="mt-1 text-sm font-bold text-slate-800">7 etapas</p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <div className="ux-card rounded-lg px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">IA</p>
                 <p className="mt-1 text-sm font-bold text-slate-800">Demo metodológica</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60">
+          <div className="ux-panel ux-reveal-delay rounded-lg p-7">
             <div className="mb-6 border-b border-slate-100 pb-5">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">Ingreso al entorno</p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
@@ -469,7 +473,7 @@ export default function Home() {
             </div>
 
             {mensaje && (
-              <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <div className="mb-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
                 <span className="mt-0.5 text-amber-500">\u26A0</span>
                 <p className="text-sm text-amber-800">{mensaje}</p>
               </div>
@@ -508,7 +512,7 @@ export default function Home() {
               type="button"
               onClick={ingresarUsuario}
               disabled={loading}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-teal-800 hover:shadow-md active:scale-[0.99] disabled:opacity-50"
+              className="ux-button-primary mt-7 flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -537,12 +541,12 @@ export default function Home() {
     const lista = propositos.length ? propositos : propositosFallback;
 
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
-        <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-lg">
+      <main className="ux-shell">
+        <header className="ux-topbar sticky top-0 z-50">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 px-3.5 py-2 shadow-sm ring-1 ring-teal-100/50">
-                <span className="h-2 w-2 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500" />
+              <div className="flex items-center gap-2 rounded-lg border border-teal-100 bg-white px-3.5 py-2 shadow-sm">
+                <span className="ux-status-dot h-2 w-2 rounded-full bg-teal-600" />
                 <span className="text-xs font-bold tracking-[0.15em] text-teal-700 uppercase">SSP · UXLab</span>
               </div>
               {usuario?.nombre_completo && (
@@ -553,26 +557,13 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={cargarRuta}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-sm"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Actualizar
-              </button>
-              <button
-                type="button"
-                onClick={avanzarSiguienteEtapa}
-                disabled={loading}
-                className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md disabled:opacity-50"
-              >
-                {loading ? "..." : "Avanzar etapa \u2192"}
-              </button>
+              <span className="hidden rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-500 shadow-sm sm:inline-flex">
+                Selección metodológica
+              </span>
               <button
                 type="button"
                 onClick={cerrarSesion}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 transition-all duration-150 hover:border-slate-300 hover:bg-white hover:text-slate-700"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 transition-all duration-150 hover:border-slate-300 hover:bg-white hover:text-slate-700"
               >
                 Salir
               </button>
@@ -580,29 +571,29 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="relative border-b border-slate-100 bg-white/70 overflow-hidden">
+        <div className="relative overflow-hidden border-b border-slate-100 bg-white/72">
           <div className="pointer-events-none absolute inset-0 bg-dots-subtle opacity-40" />
-          <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="mx-auto max-w-6xl px-6 py-10 ux-reveal">
             <div className="flex items-start justify-between gap-6">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
+                <div className="inline-flex items-center gap-2 rounded-lg border border-teal-100 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm">
                   Guía UXLab
                 </div>
                 <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
-                  Selección de propósito
+                  Selecciona un propósito
                 </h1>
                 <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-500">
-                  Selecciona el propósito que deseas trabajar. En este MVP se encuentra habilitado el Propósito 1.
+                  Elige el propósito metodológico que deseas trabajar dentro de la Plataforma Web SSP-UXLab.
                 </p>
               </div>
               <div className="hidden shrink-0 items-center gap-4 sm:flex">
                 {usuario?.nombre_completo && (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 to-emerald-100 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-200/50">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-200/50">
                     {usuario.nombre_completo.charAt(0).toUpperCase()}
                   </div>
                 )}
                 {usuario?.institucion && (
-                  <div className="rounded-2xl border border-slate-100 bg-white/80 px-5 py-4 shadow-sm">
+                  <div className="ux-card rounded-lg px-5 py-4">
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Institución</p>
                     <p className="mt-1 text-sm font-bold text-slate-800">{usuario.institucion}</p>
                     {usuario.cargo && <p className="text-xs text-slate-500">{usuario.cargo}</p>}
@@ -619,7 +610,7 @@ export default function Home() {
           </div>
         )}
 
-        <section className="mx-auto max-w-6xl px-6 py-8">
+        <section className="mx-auto max-w-6xl px-6 py-8 ux-reveal-delay">
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {lista.map((proposito, i) => (
               <PropositoCard
@@ -638,6 +629,13 @@ export default function Home() {
 
   // VISTA: PROPÓSITO 1 (flujo principal)
   const etapaActiva = ruta.find((e) => flujoDesdeEtapa(e) === current);
+  const numeroEtapaActual = numeroDesdeFlujo(current);
+  const etapaAnterior = numeroEtapaActual
+    ? ruta.find((etapa) => etapa.numero === numeroEtapaActual - 1)
+    : null;
+  const etapaSiguiente = numeroEtapaActual
+    ? ruta.find((etapa) => etapa.numero === numeroEtapaActual + 1)
+    : null;
   const etapasCompletadas = rutaData?.resumen_ruta?.total_etapas_completadas ?? 0;
   const totalEtapas = rutaData?.resumen_ruta?.total_etapas ?? 7;
   const resumenRuta = rutaData?.resumen_ruta;
@@ -655,9 +653,9 @@ export default function Home() {
     : "En desarrollo";
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+    <main className="ux-shell">
       <div className="pointer-events-none fixed inset-0 z-0 bg-dots-subtle opacity-30" />
-      <header className="relative sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-lg">
+      <header className="ux-topbar relative sticky top-0 z-50">
         <div className="flex flex-col gap-0 xl:flex-row xl:items-stretch">
           <div className="flex-1 px-6 py-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -670,7 +668,7 @@ export default function Home() {
                 Propósitos
               </button>
               <span className="text-slate-300">/</span>
-              <span className="rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-1.5 text-xs font-bold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
+              <span className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700 shadow-sm">
                 Propósito 1
               </span>
             </div>
@@ -698,11 +696,11 @@ export default function Home() {
           <div className="border-t border-slate-100 px-6 py-4 xl:w-72 xl:border-l xl:border-t-0">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500">Avance total</span>
-              <span className="text-sm font-bold text-transparent bg-gradient-to-br from-teal-600 to-emerald-600 bg-clip-text">{porcentajeAvance}%</span>
+              <span className="text-sm font-bold text-teal-700">{porcentajeAvance}%</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-700 ease-out"
+                className="h-full rounded-full bg-teal-600 transition-all duration-700 ease-out"
                 style={{ width: `${porcentajeAvance}%` }}
               />
             </div>
@@ -712,8 +710,51 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 bg-slate-50/80">
+        <div className="border-t border-slate-100 bg-slate-50/88">
           <div className="flex gap-0 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setCurrent("catalogo")}
+              className={`group flex min-w-[150px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 ${
+                current === "catalogo"
+                  ? "ux-tab-active border-teal-600 bg-white shadow-sm"
+                  : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Clipboard className={`h-5 w-5 ${current === "catalogo" ? "text-teal-700" : "text-slate-600"}`} strokeWidth={2.2} />
+                <span className={`text-xs font-semibold ${current === "catalogo" ? "text-teal-700" : "text-slate-700"}`}>
+                  Catálogo
+                </span>
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400">
+                Herramientas del propósito
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrent("calendarizacion")}
+              className={`group flex min-w-[165px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 bg-white ${
+                current === "calendarizacion"
+                  ? "ux-tab-active border-teal-600 shadow-sm"
+                  : "border-transparent hover:border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <CalendarDays className={`h-5 w-5 ${current === "calendarizacion" ? "text-teal-700" : "text-slate-600"}`} strokeWidth={2.2} aria-hidden="true" />
+                <span className={`text-xs font-semibold ${current === "calendarizacion" ? "text-teal-700" : "text-slate-700"}`}>
+                  Calendarización
+                </span>
+                <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 ring-1 ring-amber-200/50">
+                  MVP
+                </span>
+              </div>
+              <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
+                Fechas y responsables
+              </p>
+            </button>
+
             {ruta.map((etapa) => {
               const esCurrent = current === flujoDesdeEtapa(etapa);
               return (
@@ -732,7 +773,7 @@ export default function Home() {
               onClick={() => setCurrent("evidencias")}
               className={`group flex min-w-[140px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 bg-white ${
                 current === "evidencias"
-                  ? "border-teal-600 shadow-sm"
+                  ? "ux-tab-active border-teal-600 shadow-sm"
                   : "border-transparent hover:border-slate-200 hover:bg-slate-50"
               }`}
             >
@@ -741,7 +782,7 @@ export default function Home() {
                 <span className={`text-xs font-semibold ${current === "evidencias" ? "text-teal-700" : "text-slate-700"}`}>
                   Evidencias
                 </span>
-                <span className="rounded-full bg-gradient-to-r from-violet-50 to-purple-50 px-1.5 py-0.5 text-[9px] font-bold text-violet-600 ring-1 ring-violet-200/50">
+                <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[9px] font-bold text-violet-600 ring-1 ring-violet-200/50">
                   Trans.
                 </span>
               </div>
@@ -761,25 +802,26 @@ export default function Home() {
 
       <div className="relative z-10 border-b border-slate-100 bg-white/40 px-6 py-4">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 rounded-xl border border-teal-200/50 bg-gradient-to-br from-teal-50 to-emerald-50/50 px-4 py-2.5 shadow-sm">
+          <div className="flex items-center gap-2 rounded-lg border border-teal-200/50 bg-teal-50 px-4 py-2.5 shadow-sm">
             <CheckCircle className="h-4 w-4 text-teal-600" aria-hidden="true" />
             <span className="text-xs font-semibold text-teal-800">
               <span className="text-sm font-bold">{etapasCompletadas}</span> de {totalEtapas} etapas completadas
             </span>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200/60 bg-white px-4 py-2.5 shadow-sm">
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 shadow-sm">
             <FileText className="h-4 w-4 text-slate-600" aria-hidden="true" />
             <span className="text-xs font-semibold text-slate-700">Evidencias registradas</span>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-violet-200/50 bg-gradient-to-br from-violet-50 to-purple-50/50 px-4 py-2.5 shadow-sm">
+          <div className="flex items-center gap-2 rounded-lg border border-violet-200/50 bg-violet-50 px-4 py-2.5 shadow-sm">
             <Sparkles className="h-4 w-4 text-violet-600" aria-hidden="true" />
             <span className="text-xs font-semibold text-violet-800">IA Demo activa</span>
           </div>
         </div>
       </div>
 
+      {current !== "catalogo" && current !== "calendarizacion" && (
       <div className="relative z-10 border-b border-slate-100 bg-white px-6 py-4">
-        <div className="mx-auto grid max-w-7xl gap-3 lg:grid-cols-[1.1fr_1fr_auto] lg:items-center">
+        <div className="mx-auto grid max-w-7xl gap-3 lg:grid-cols-[1.1fr_1fr] lg:items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Motor de ruta</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -799,7 +841,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
             <p className="text-xs font-semibold text-slate-500">
               {puedeAvanzar ? "Siguiente etapa sugerida" : "Requisito para avanzar"}
             </p>
@@ -812,44 +854,74 @@ export default function Home() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={avanzarSiguienteEtapa}
-            disabled={loading || !puedeAvanzar}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-3 text-xs font-bold text-white shadow-sm transition-all duration-150 hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-          >
-            {loading ? "Actualizando..." : "Avanzar etapa"}
-            <ArrowRight className="h-4 w-4" />
-          </button>
         </div>
       </div>
+      )}
 
-      <section className="relative z-10">
-        {current === "investigacion" && <InvestigacionFlow />}
-        {current === "personas" && <PersonasFlow />}
-        {current === "habilitacion" && <HabilitacionFlow />}
-        {current === "necesidades" && <NecesidadesFlow />}
+      {current !== "catalogo" && current !== "calendarizacion" && (
+      <div className="relative z-10 border-b border-slate-100 bg-slate-50/80 px-6 py-3">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Navegación del wizard</p>
+            <p className="mt-0.5 text-sm font-semibold text-slate-800">
+              {current === "evidencias"
+                ? "Evidencias transversales"
+                : `${numeroEtapaActual || 1}. ${etapaActiva?.nombre || "Investigación"}`}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => etapaAnterior && irAEtapa(etapaAnterior)}
+              disabled={!etapaAnterior || !numeroEtapaActual || current === "evidencias"}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition-all duration-150 hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => etapaSiguiente && irAEtapa(etapaSiguiente)}
+              disabled={!etapaSiguiente || !numeroEtapaActual || current === "evidencias"}
+              className="ux-button-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+            >
+              Continuar
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
+
+      <section className="relative z-10 ux-reveal">
+        {current === "catalogo" && <CatalogoHerramientasProp1 onAbrirHerramienta={abrirHerramienta} />}
+        {current === "calendarizacion" && <CalendarizacionProp1 apiUrl={API_URL} proyectoId={PROYECTO_ID} />}
+        {current === "investigacion" && <InvestigacionFlow onNavigate={navegarFlujo} />}
+        {current === "personas" && <PersonasFlow onNavigate={navegarFlujo} />}
+        {current === "habilitacion" && <HabilitacionFlow onNavigate={navegarFlujo} />}
+        {current === "necesidades" && <NecesidadesFlow onNavigate={navegarFlujo} />}
         {current === "evidencias" && <EvidenciasFlow />}
 
         {current === "vinculacion" && (
           <PlaceholderEtapa
             icono={<Link className="h-10 w-10 text-slate-400" />}
             titulo="Vinculación"
-            descripcion="Esta etapa permitirá relacionar necesidades detectadas con actividades, respuestas institucionales o puntos de contacto del servicio."
+            descripcion="Etapa planificada para Hito 3"
           />
         )}
         {current === "medicion" && (
           <PlaceholderEtapa
             icono={<BarChart3 className="h-10 w-10 text-slate-400" />}
             titulo="Medición"
-            descripcion="Esta etapa permitirá definir indicadores, línea base, metas y evidencias asociadas a la experiencia usuaria."
+            descripcion="Etapa planificada para Hito 3"
           />
         )}
         {current === "momentos" && (
           <PlaceholderEtapa
             icono={<Target className="h-10 w-10 text-slate-400" />}
             titulo="Momentos críticos"
-            descripcion="Esta etapa permitirá identificar fricciones, causas raíz, impactos y oportunidades de mejora en la experiencia."
+            descripcion="Etapa planificada para Hito 3"
           />
         )}
       </section>
@@ -883,7 +955,7 @@ function FormField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none transition-all duration-150 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
+        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none transition-all duration-150 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
       />
     </div>
   );
@@ -899,14 +971,14 @@ function MensajeAlerta({
   onClose: () => void;
 }) {
   const styles = {
-    success: "border-teal-200/60 bg-gradient-to-r from-teal-50 to-emerald-50 text-teal-800",
-    warning: "border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800",
-    error: "border-red-200/60 bg-gradient-to-r from-red-50 to-rose-50 text-red-800",
+    success: "border-teal-200/60 bg-teal-50 text-teal-800",
+    warning: "border-amber-200/60 bg-amber-50 text-amber-800",
+    error: "border-red-200/60 bg-red-50 text-red-800",
   };
   const iconos = { success: <CheckCircle className="h-5 w-5 text-teal-600" aria-hidden="true" />, warning: <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden="true" />, error: <X className="h-5 w-5 text-rose-600" aria-hidden="true" /> };
 
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-sm ${styles[tipo]}`}>
+    <div className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-sm ${styles[tipo]}`}>
       <div className="flex items-center gap-2">
         <span className="text-sm font-bold">{iconos[tipo]}</span>
         <p className="text-sm font-medium">{mensaje}</p>
@@ -934,34 +1006,39 @@ function PropositoCard({
   numero: number;
   onClick: () => void;
 }) {
+  const esDisponible = proposito.activo;
+  const titulo = numero === 1
+    ? "Propósito 1: Comprender la experiencia actual"
+    : proposito.titulo;
+  const descripcion = numero === 1
+    ? "Permite levantar información inicial, caracterizar personas usuarias, identificar expectativas, necesidades, vínculos, mediciones y momentos críticos de la experiencia."
+    : proposito.descripcion;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative w-full rounded-2xl border p-6 text-left transition-all duration-200 ${
-        proposito.activo
-          ? "border-teal-100/80 bg-white shadow-md shadow-slate-200/40 hover:-translate-y-1 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-100/40"
-          : "border-slate-100 bg-slate-50/60 opacity-70 cursor-not-allowed"
+      aria-disabled={!esDisponible}
+      className={`ux-card-interactive group relative w-full overflow-hidden rounded-lg border p-6 text-left transition-all duration-200 ${
+        esDisponible
+          ? "border-teal-200 bg-white shadow-md shadow-slate-200/40 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+          : "cursor-not-allowed border-slate-200 bg-slate-50/70 opacity-80"
       }`}
     >
-      <div className={`absolute right-0 top-0 h-24 w-24 rounded-bl-full transition-all duration-200 ${
-        proposito.activo ? "bg-gradient-to-bl from-teal-50/40 to-transparent" : ""
-      }`} />
-
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-sm transition-all duration-200 ${
-          proposito.activo ? "bg-teal-50 border border-teal-100 text-teal-700 group-hover:scale-110 group-hover:shadow-md" : "bg-slate-100 border border-slate-200 text-slate-400"
+        <div className={`flex h-11 w-11 items-center justify-center rounded-lg shadow-sm transition-all duration-200 ${
+          esDisponible ? "bg-teal-50 border border-teal-100 text-teal-700 group-hover:shadow-md" : "bg-slate-100 border border-slate-200 text-slate-400"
         }`}>
           {icono}
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-bold shadow-sm ${
-            proposito.activo
-              ? "bg-gradient-to-r from-teal-100 to-emerald-100 text-teal-700"
-              : "bg-slate-200 text-slate-500"
+            esDisponible
+              ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
+              : "bg-slate-200 text-slate-600"
           }`}
         >
-          {proposito.activo ? "Disponible" : "Proximamente"}
+          {esDisponible ? "Disponible" : "Próximamente"}
         </span>
       </div>
 
@@ -969,27 +1046,27 @@ function PropositoCard({
         Propósito {numero}
       </div>
       <h2 className={`text-base font-bold leading-snug tracking-tight transition-colors duration-150 ${
-        proposito.activo ? "text-slate-800 group-hover:text-teal-700" : "text-slate-600"
+        esDisponible ? "text-slate-900 group-hover:text-teal-700" : "text-slate-600"
       }`}>
-        {proposito.titulo}
+        {titulo}
       </h2>
-      <p className="mt-2 text-xs leading-relaxed text-slate-500">
-        {proposito.descripcion}
+      <p className="mt-3 text-sm leading-relaxed text-slate-600">
+        {descripcion}
       </p>
 
       <div className="mt-5 flex items-center justify-between">
-        {proposito.activo ? (
-          <div className="rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 ring-1 ring-teal-100/50">
+        {esDisponible ? (
+          <div className="rounded-lg bg-teal-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 ring-1 ring-teal-100/50">
             7 etapas · Demo IA
           </div>
         ) : (
-          <div className="rounded-lg bg-slate-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 ring-1 ring-slate-200/50">
-            Próximamente
+          <div className="rounded-lg bg-slate-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 ring-1 ring-slate-200/50">
+            Fuera del alcance del MVP
           </div>
         )}
-        {proposito.activo && (
+        {esDisponible && (
           <span className="flex items-center gap-1 text-xs font-semibold text-teal-600">
-            Entrar <span className="transition-transform duration-150 group-hover:translate-x-1">&rarr;</span>
+            Entrar <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1" />
           </span>
         )}
       </div>
@@ -1020,6 +1097,24 @@ function EtapaTab({
 
   const isLocked = !activa && estado === "pendiente";
   const isReview = estado === "incompleta";
+  const estadoLabel = activa
+    ? "Activa"
+    : estado === "completada"
+    ? "Completada"
+    : estado === "disponible"
+    ? "Disponible"
+    : isReview
+    ? "Pendiente"
+    : "Pendiente";
+  const estadoClass = activa
+    ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
+    : estado === "completada"
+    ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+    : estado === "disponible"
+    ? "bg-sky-50 text-sky-700 ring-1 ring-sky-100"
+    : isReview
+    ? "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
+    : "bg-slate-100 text-slate-500 ring-1 ring-slate-200";
 
   return (
     <button
@@ -1036,6 +1131,11 @@ function EtapaTab({
       }`}
     >
       <div className="flex items-center gap-2">
+        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+          activa ? "bg-teal-600 text-white" : estado === "completada" ? "bg-emerald-600 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
+        }`}>
+          {etapa.numero}
+        </span>
         <span className={
           activa ? "text-teal-700" : isLocked ? "text-slate-400" : isReview ? "text-amber-600" : "text-slate-600 group-hover:text-slate-900"
         }>
@@ -1049,12 +1149,12 @@ function EtapaTab({
           {etapa.nombre}
         </span>
         {estado === "completada" && (
-          <span className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-100 to-emerald-100 shadow-sm">
+          <span className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-100 shadow-sm">
             <Check className="h-3 w-3 text-teal-700" strokeWidth={3} />
           </span>
         )}
         {estado === "actual" && !activa && (
-          <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 shadow-sm" />
+          <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600 shadow-sm" />
         )}
         {estado === "disponible" && (
           <span className="ml-auto rounded-full bg-teal-50 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 ring-1 ring-teal-100">
@@ -1065,7 +1165,12 @@ function EtapaTab({
           <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-300" />
         )}
       </div>
-      <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">{etapa.descripcion}</p>
+      <div className="mt-2 flex items-center gap-2">
+        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] ${estadoClass}`}>
+          {estadoLabel}
+        </span>
+      </div>
+      <p className="mt-1 line-clamp-1 text-[10px] text-slate-400">{etapa.descripcion}</p>
     </button>
   );
 }
@@ -1082,14 +1187,14 @@ function PlaceholderEtapa({
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-6 py-16">
       <div className="mx-auto w-full max-w-lg text-center">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-white shadow-lg shadow-slate-200/50 ring-1 ring-slate-200">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-lg bg-white shadow-lg shadow-slate-200/50 ring-1 ring-slate-200">
           {icono}
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">{titulo}</h2>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500">
           {descripcion}
         </p>
-        <div className="mt-8 inline-flex items-center gap-2 rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-3 text-sm font-medium text-amber-700 shadow-sm">
+        <div className="mt-8 inline-flex items-center gap-2 rounded-lg border border-amber-200/60 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700 shadow-sm">
           <Clock className="h-5 w-5 text-amber-600" aria-hidden="true" />
           Disponible en la próxima iteración
         </div>

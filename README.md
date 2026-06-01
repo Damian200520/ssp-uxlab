@@ -116,6 +116,8 @@ Actualmente el módulo de inteligencia artificial opera en **modo demo** (`IA_MO
 - No se deben subir contraseñas, DATABASE_URL, claves privadas ni archivos de entorno con valores reales. Las variables públicas del frontend deben configurarse en el entorno de despliegue correspondiente.
 - La conexión a la base de datos usa SSL, aunque en entorno local está deshabilitada la verificación de certificado.
 - Actualmente no hay autenticación; el "acceso" almacena datos del usuario en `localStorage`.
+- RLS de Supabase no se activa directamente en la demo actual porque algunos flujos aún usan `NEXT_PUBLIC_SUPABASE_ANON_KEY` desde frontend. El plan de seguridad del Hito 3 queda documentado en `SEGURIDAD_HITO3.md`.
+- La auditoría y el plan de mitigación RLS quedan documentados en `SEGURIDAD_HITO3.md`. No se incluyen scripts SQL ejecutables en el repositorio para evitar confusión durante la demo.
 
 ## Próximos pasos
 
@@ -123,6 +125,7 @@ Actualmente el módulo de inteligencia artificial opera en **modo demo** (`IA_MO
 - Migrar las consultas directas a Supabase desde los componentes frontend hacia el backend FastAPI.
 - Extraer componentes duplicados (sidebar, toasts, tab bar) para reducir código repetido.
 - Implementar autenticación real (JWT / Supabase Auth).
+- Activar RLS por `proyecto_id` una vez que exista Supabase Auth y membresía por proyecto.
 - Mantener documentado el alcance demo de IA validado con UXLab.
 - Agregar pruebas automatizadas (frontend y backend).
 - Agregar Error Boundaries para evitar crashes totales de la interfaz.
