@@ -388,7 +388,14 @@ async def crear_persona_usuaria(data):
                 barreras,
                 motivaciones,
                 foto_url,
-                sugerencia_ia
+                sugerencia_ia,
+                nivel_digital,
+                canales_contacto,
+                expectativas,
+                relacion_servicio,
+                fuente_perfil,
+                estado_perfil,
+                completado
             )
             values (
                 $1::uuid,
@@ -399,7 +406,14 @@ async def crear_persona_usuaria(data):
                 $6::text[],
                 $7::text[],
                 $8,
-                $9
+                $9,
+                $10,
+                $11::text[],
+                $12::text[],
+                $13,
+                $14,
+                $15,
+                $16::boolean
             )
             returning
                 id::text,
@@ -412,6 +426,13 @@ async def crear_persona_usuaria(data):
                 motivaciones,
                 foto_url,
                 sugerencia_ia,
+                nivel_digital,
+                canales_contacto,
+                expectativas,
+                relacion_servicio,
+                fuente_perfil,
+                estado_perfil,
+                completado,
                 created_at::text;
         """
 
@@ -426,6 +447,13 @@ async def crear_persona_usuaria(data):
             data.motivaciones,
             data.foto_url,
             data.sugerencia_ia,
+            data.nivel_digital,
+            data.canales_contacto,
+            data.expectativas,
+            data.relacion_servicio,
+            data.fuente_perfil,
+            data.estado_perfil,
+            data.completado,
         )
 
         return dict(row)
@@ -450,6 +478,13 @@ async def listar_personas_usuarias_por_proyecto(proyecto_id: str):
                 motivaciones,
                 foto_url,
                 sugerencia_ia,
+                nivel_digital,
+                canales_contacto,
+                expectativas,
+                relacion_servicio,
+                fuente_perfil,
+                estado_perfil,
+                completado,
                 created_at::text
             from persona_usuaria
             where proyecto_id = $1::uuid
@@ -459,6 +494,93 @@ async def listar_personas_usuarias_por_proyecto(proyecto_id: str):
         rows = await conn.fetch(query, proyecto_id)
 
         return [dict(row) for row in rows]
+
+    finally:
+        await conn.close()
+
+
+async def actualizar_persona_usuaria(persona_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update persona_usuaria
+            set
+                nombre_arquetipo = coalesce($2, nombre_arquetipo),
+                rol = coalesce($3, rol),
+                descripcion = coalesce($4, descripcion),
+                necesidades = coalesce($5::text[], necesidades),
+                barreras = coalesce($6::text[], barreras),
+                motivaciones = coalesce($7::text[], motivaciones),
+                foto_url = coalesce($8, foto_url),
+                sugerencia_ia = coalesce($9, sugerencia_ia),
+                nivel_digital = coalesce($10, nivel_digital),
+                canales_contacto = coalesce($11::text[], canales_contacto),
+                expectativas = coalesce($12::text[], expectativas),
+                relacion_servicio = coalesce($13, relacion_servicio),
+                fuente_perfil = coalesce($14, fuente_perfil),
+                estado_perfil = coalesce($15, estado_perfil),
+                completado = coalesce($16::boolean, completado)
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                nombre_arquetipo,
+                rol,
+                descripcion,
+                necesidades,
+                barreras,
+                motivaciones,
+                foto_url,
+                sugerencia_ia,
+                nivel_digital,
+                canales_contacto,
+                expectativas,
+                relacion_servicio,
+                fuente_perfil,
+                estado_perfil,
+                completado,
+                created_at::text;
+            """,
+            persona_id,
+            data.nombre_arquetipo,
+            data.rol,
+            data.descripcion,
+            data.necesidades,
+            data.barreras,
+            data.motivaciones,
+            data.foto_url,
+            data.sugerencia_ia,
+            data.nivel_digital,
+            data.canales_contacto,
+            data.expectativas,
+            data.relacion_servicio,
+            data.fuente_perfil,
+            data.estado_perfil,
+            data.completado,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
+async def eliminar_persona_usuaria(persona_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            delete from persona_usuaria
+            where id = $1::uuid
+            returning id::text;
+            """,
+            persona_id,
+        )
+
+        return dict(row) if row else None
 
     finally:
         await conn.close()
@@ -536,6 +658,87 @@ async def obtener_habilitacion_por_proyecto(proyecto_id: str):
             return None
 
         return dict(row)
+
+    finally:
+        await conn.close()
+
+
+async def listar_habilitaciones_por_proyecto(proyecto_id: str):
+    conn = await get_connection()
+
+    try:
+        rows = await conn.fetch(
+            """
+            select
+                id::text,
+                proyecto_id::text,
+                nivel_acceso::text,
+                nivel_conocimiento::text,
+                nivel_digital::text,
+                descripcion_habilitacion,
+                created_at::text
+            from habilitacion
+            where proyecto_id = $1::uuid
+            order by created_at desc;
+            """,
+            proyecto_id,
+        )
+
+        return [dict(row) for row in rows]
+
+    finally:
+        await conn.close()
+
+
+async def actualizar_habilitacion(habilitacion_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update habilitacion
+            set
+                nivel_acceso = coalesce($2::text::nivel_basico, nivel_acceso),
+                nivel_conocimiento = coalesce($3::text::nivel_basico, nivel_conocimiento),
+                nivel_digital = coalesce($4::text::nivel_basico, nivel_digital),
+                descripcion_habilitacion = coalesce($5, descripcion_habilitacion)
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                nivel_acceso::text,
+                nivel_conocimiento::text,
+                nivel_digital::text,
+                descripcion_habilitacion,
+                created_at::text;
+            """,
+            habilitacion_id,
+            data.nivel_acceso,
+            data.nivel_conocimiento,
+            data.nivel_digital,
+            data.descripcion_habilitacion,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
+async def eliminar_habilitacion(habilitacion_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            delete from habilitacion
+            where id = $1::uuid
+            returning id::text;
+            """,
+            habilitacion_id,
+        )
+
+        return dict(row) if row else None
 
     finally:
         await conn.close()
@@ -630,6 +833,98 @@ async def listar_expectativas_por_proyecto(proyecto_id: str):
         await conn.close()
 
 
+async def obtener_expectativa_por_id(expectativa_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            select
+                id::text,
+                proyecto_id::text,
+                persona_usuaria_id::text,
+                expectativa_usuario,
+                nivel_cumplimiento::text,
+                resultado_esperado,
+                indicador_exito,
+                linea_accion,
+                analisis_ia,
+                created_at::text
+            from expectativa
+            where id = $1::uuid;
+            """,
+            expectativa_id,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
+async def actualizar_expectativa(expectativa_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update expectativa
+            set
+                persona_usuaria_id = coalesce($2::uuid, persona_usuaria_id),
+                expectativa_usuario = coalesce($3, expectativa_usuario),
+                nivel_cumplimiento = coalesce($4::nivel_cumplimiento, nivel_cumplimiento),
+                resultado_esperado = coalesce($5, resultado_esperado),
+                indicador_exito = coalesce($6, indicador_exito),
+                linea_accion = coalesce($7, linea_accion),
+                analisis_ia = coalesce($8, analisis_ia)
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                persona_usuaria_id::text,
+                expectativa_usuario,
+                nivel_cumplimiento::text,
+                resultado_esperado,
+                indicador_exito,
+                linea_accion,
+                analisis_ia,
+                created_at::text;
+            """,
+            expectativa_id,
+            data.persona_usuaria_id,
+            data.expectativa_usuario,
+            data.nivel_cumplimiento,
+            data.resultado_esperado,
+            data.indicador_exito,
+            data.linea_accion,
+            data.analisis_ia,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
+async def eliminar_expectativa(expectativa_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            delete from expectativa
+            where id = $1::uuid
+            returning id::text;
+            """,
+            expectativa_id,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
 # =========================
 # Necesidades conectadas a Supabase
 # =========================
@@ -713,6 +1008,66 @@ async def listar_necesidades_por_proyecto(proyecto_id: str):
     finally:
         await conn.close()
 
+
+async def actualizar_necesidad(necesidad_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update necesidad
+            set
+                persona_usuaria_id = coalesce($2::uuid, persona_usuaria_id),
+                descripcion = coalesce($3, descripcion),
+                categoria = coalesce($4, categoria),
+                impacto = coalesce($5::impacto_tipo, impacto),
+                estado = coalesce($6::estado_necesidad, estado),
+                sugerencia_ia = coalesce($7, sugerencia_ia)
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                persona_usuaria_id::text,
+                descripcion,
+                categoria,
+                impacto::text,
+                estado::text,
+                sugerencia_ia,
+                created_at::text;
+            """,
+            necesidad_id,
+            data.persona_usuaria_id,
+            data.descripcion,
+            data.categoria,
+            data.impacto,
+            data.estado,
+            data.sugerencia_ia,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
+async def eliminar_necesidad(necesidad_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            delete from necesidad
+            where id = $1::uuid
+            returning id::text;
+            """,
+            necesidad_id,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
 # =========================
 # Vinculación conectada a Supabase
 # =========================
@@ -787,6 +1142,44 @@ async def listar_vinculaciones_por_proyecto(proyecto_id: str):
         rows = await conn.fetch(query, proyecto_id)
 
         return [dict(row) for row in rows]
+
+    finally:
+        await conn.close()
+
+
+async def actualizar_vinculacion(vinculacion_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update vinculacion
+            set
+                necesidad_id = coalesce($2::uuid, necesidad_id),
+                actividad_servicio = coalesce($3, actividad_servicio),
+                descripcion_vinculo = coalesce($4, descripcion_vinculo),
+                tipo_vinculo = coalesce($5::text::tipo_vinculo, tipo_vinculo),
+                alerta_ia = coalesce($6, alerta_ia)
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                necesidad_id::text,
+                actividad_servicio,
+                descripcion_vinculo,
+                tipo_vinculo::text,
+                alerta_ia,
+                created_at::text;
+            """,
+            vinculacion_id,
+            data.necesidad_id,
+            data.actividad_servicio,
+            data.descripcion_vinculo,
+            data.tipo_vinculo,
+            data.alerta_ia,
+        )
+
+        return dict(row) if row else None
 
     finally:
         await conn.close()
@@ -884,6 +1277,50 @@ async def listar_indicadores_por_proyecto(proyecto_id: str):
 # Momentos críticos conectados a Supabase
 # =========================
 
+async def actualizar_indicador(indicador_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update indicador
+            set
+                nombre = coalesce($2, nombre),
+                descripcion = coalesce($3, descripcion),
+                valor_base = coalesce($4, valor_base),
+                valor_meta = coalesce($5, valor_meta),
+                unidad = coalesce($6, unidad),
+                estado = coalesce($7::text::estado_indicador, estado),
+                sugerencia_ia = coalesce($8, sugerencia_ia)
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                nombre,
+                descripcion,
+                valor_base::float,
+                valor_meta::float,
+                unidad,
+                estado::text,
+                sugerencia_ia,
+                created_at::text;
+            """,
+            indicador_id,
+            data.nombre,
+            data.descripcion,
+            data.valor_base,
+            data.valor_meta,
+            data.unidad,
+            data.estado,
+            data.sugerencia_ia,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
 async def crear_momento_critico(data):
     conn = await get_connection()
 
@@ -967,6 +1404,47 @@ async def listar_momentos_criticos_por_proyecto(proyecto_id: str):
 # Herramientas del Propósito 1
 # Catálogo metodológico sin tabla
 # =========================
+
+async def actualizar_momento_critico(momento_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update momento_critico
+            set
+                descripcion = coalesce($2, descripcion),
+                punto_contacto = coalesce($3, punto_contacto),
+                impacto = coalesce($4::text::impacto_tipo, impacto),
+                causa_raiz = coalesce($5, causa_raiz),
+                oportunidad_mejora = coalesce($6, oportunidad_mejora),
+                sintesis_ia = coalesce($7, sintesis_ia)
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                descripcion,
+                punto_contacto,
+                impacto::text,
+                causa_raiz,
+                oportunidad_mejora,
+                sintesis_ia,
+                created_at::text;
+            """,
+            momento_id,
+            data.descripcion,
+            data.punto_contacto,
+            data.impacto,
+            data.causa_raiz,
+            data.oportunidad_mejora,
+            data.sintesis_ia,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
 
 HERRAMIENTAS_PROPOSITO_1 = [
     {
@@ -1251,6 +1729,161 @@ async def eliminar_calendarizacion(calendarizacion_id: str):
             return None
 
         return dict(row)
+
+    finally:
+        await conn.close()
+
+
+# =========================
+# Evidencias conectadas a Supabase
+# =========================
+
+async def crear_evidencia(data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            insert into evidencia (
+                proyecto_id,
+                calendarizacion_id,
+                etapa,
+                nombre_archivo,
+                tipo_archivo,
+                url_storage,
+                descripcion,
+                responsable
+            )
+            values (
+                $1::uuid,
+                $2::uuid,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8
+            )
+            returning
+                id::text,
+                proyecto_id::text,
+                calendarizacion_id::text,
+                etapa,
+                nombre_archivo,
+                tipo_archivo,
+                url_storage,
+                descripcion,
+                responsable,
+                created_at::text,
+                updated_at::text;
+            """,
+            data.proyecto_id,
+            data.calendarizacion_id,
+            data.etapa,
+            data.nombre_archivo,
+            data.tipo_archivo,
+            data.url_storage,
+            data.descripcion,
+            data.responsable,
+        )
+
+        return dict(row)
+
+    finally:
+        await conn.close()
+
+
+async def listar_evidencias_por_proyecto(proyecto_id: str):
+    conn = await get_connection()
+
+    try:
+        rows = await conn.fetch(
+            """
+            select
+                id::text,
+                proyecto_id::text,
+                calendarizacion_id::text,
+                etapa,
+                nombre_archivo,
+                tipo_archivo,
+                url_storage,
+                descripcion,
+                responsable,
+                created_at::text,
+                updated_at::text
+            from evidencia
+            where proyecto_id = $1::uuid
+            order by created_at desc;
+            """,
+            proyecto_id,
+        )
+
+        return [dict(row) for row in rows]
+
+    finally:
+        await conn.close()
+
+
+async def actualizar_evidencia(evidencia_id: str, data):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            update evidencia
+            set
+                calendarizacion_id = coalesce($2::uuid, calendarizacion_id),
+                etapa = coalesce($3, etapa),
+                nombre_archivo = coalesce($4, nombre_archivo),
+                tipo_archivo = coalesce($5, tipo_archivo),
+                url_storage = coalesce($6, url_storage),
+                descripcion = coalesce($7, descripcion),
+                responsable = coalesce($8, responsable),
+                updated_at = now()
+            where id = $1::uuid
+            returning
+                id::text,
+                proyecto_id::text,
+                calendarizacion_id::text,
+                etapa,
+                nombre_archivo,
+                tipo_archivo,
+                url_storage,
+                descripcion,
+                responsable,
+                created_at::text,
+                updated_at::text;
+            """,
+            evidencia_id,
+            data.calendarizacion_id,
+            data.etapa,
+            data.nombre_archivo,
+            data.tipo_archivo,
+            data.url_storage,
+            data.descripcion,
+            data.responsable,
+        )
+
+        return dict(row) if row else None
+
+    finally:
+        await conn.close()
+
+
+async def eliminar_evidencia(evidencia_id: str):
+    conn = await get_connection()
+
+    try:
+        row = await conn.fetchrow(
+            """
+            delete from evidencia
+            where id = $1::uuid
+            returning id::text;
+            """,
+            evidencia_id,
+        )
+
+        return dict(row) if row else None
 
     finally:
         await conn.close()
@@ -1746,7 +2379,7 @@ ETAPAS_PROPOSITO_1 = [
     },
 ]
 
-ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1 = 4
+ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1 = 7
 
 REQUISITOS_RUTA_PROPOSITO_1 = {
     1: "Validar al menos un plan de investigación.",
@@ -1875,9 +2508,39 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
     proyecto_id,
 ),
     # Estas etapas todavía no están implementadas en frontend, así que no deben aparecer completadas
-    5: False,
-    6: False,
-    7: False,
+    5: await conn.fetchval(
+        """
+        select count(*) > 0
+        from vinculacion
+        where proyecto_id = $1::uuid
+        and descripcion_vinculo like '::uxlab-vinculacion-meta::%%'
+        and position('"estado":"validado"' in descripcion_vinculo) > 0
+        and position('"validado_ruta":true' in descripcion_vinculo) > 0;
+        """,
+        proyecto_id,
+    ),
+    6: await conn.fetchval(
+        """
+        select count(*) > 0
+        from indicador
+        where proyecto_id = $1::uuid
+        and descripcion like '::uxlab-medicion-meta::%%'
+        and position('"estado":"validado"' in descripcion) > 0
+        and position('"validado_ruta":true' in descripcion) > 0;
+        """,
+        proyecto_id,
+    ),
+    7: await conn.fetchval(
+        """
+        select count(*) > 0
+        from momento_critico
+        where proyecto_id = $1::uuid
+        and causa_raiz like '::uxlab-momento-meta::%%'
+        and position('"estado":"validado"' in causa_raiz) > 0
+        and position('"validado_ruta":true' in causa_raiz) > 0;
+        """,
+        proyecto_id,
+    ),
 }
 
         detalle_conteos = {
@@ -1912,7 +2575,7 @@ async def obtener_ruta_proposito_1(proyecto_id: str):
         bloqueo_avance = None
 
         if etapa_actual >= ETAPA_MAXIMA_DISPONIBLE_PROPOSITO_1:
-            bloqueo_avance = "El alcance actual de la plataforma llega hasta Necesidades."
+            bloqueo_avance = "El alcance actual de la plataforma llega hasta Momentos criticos."
         elif not etapa_actual_completada:
             bloqueo_avance = requisito_actual
 

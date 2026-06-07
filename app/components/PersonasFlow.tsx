@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Check, X, Smartphone, Phone } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
-import { supabase } from "./supabaseClient";
 
 
 interface Perfil {
@@ -226,22 +225,24 @@ export default function PersonasFlow({
 
 
     const cargarPerfiles = useCallback(async () => {
-        const { data, error } = await supabase
-            .from("persona_usuaria")
-            .select("*")
-            .eq("proyecto_id", PROYECTO_ID)
-            .order("created_at", { ascending: false });
+        try {
+            const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/personas-usuarias`);
 
-        if (error) {
-            addToast("No se pudieron cargar los perfiles: " + error.message, "error");
-            return;
+            if (!res.ok) throw new Error(await res.text());
+
+            const json = await res.json();
+            const perfilesNormalizados = (json.personas_usuarias || []).map(dbToPerfil);
+            setPerfiles(perfilesNormalizados);
+            setLienzoSeleccionado((prev) =>
+                prev ? (perfilesNormalizados.find((perfil: Perfil) => perfil.id === prev.id) ?? null) : null
+            );
+        } catch (error) {
+            addToast(
+                "No se pudieron cargar los perfiles: " +
+                    (error instanceof Error ? error.message : "error desconocido"),
+                "error"
+            );
         }
-
-        const perfilesNormalizados = (data || []).map(dbToPerfil);
-        setPerfiles(perfilesNormalizados);
-        setLienzoSeleccionado((prev) =>
-            prev ? (perfilesNormalizados.find((perfil) => perfil.id === prev.id) ?? null) : null
-        );
     }, [addToast]);
 
     const cargarSugerenciasInvestigacion = useCallback(async () => {
@@ -298,14 +299,21 @@ export default function PersonasFlow({
 
         const datosPerfil = formToPersonaUsuariaDb(form);
 
-        const { error } = idEnEdicion
-            ? await supabase.from("persona_usuaria").update(datosPerfil).eq("id", idEnEdicion)
-            : await supabase.from("persona_usuaria").insert([datosPerfil]);
+        const res = await fetch(
+            idEnEdicion
+                ? `${API_URL}/personas-usuarias/${idEnEdicion}`
+                : `${API_URL}/personas-usuarias`,
+            {
+                method: idEnEdicion ? "PATCH" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(datosPerfil),
+            }
+        );
 
         setLoading(false);
 
-        if (error) {
-            addToast("Error al guardar: " + error.message, "error");
+        if (!res.ok) {
+            addToast("Error al guardar: " + (await res.text()), "error");
         } else {
             addToast(idEnEdicion ? "¡Perfil actualizado!" : "¡Perfil guardado!", "success");
             setForm(FORM_INICIAL);
@@ -343,25 +351,26 @@ export default function PersonasFlow({
 
     async function confirmarEliminar() {
         if (!confirmPendiente) return;
-        const { error } = await supabase.from("persona_usuaria").delete().eq("id", confirmPendiente.id);
-        if (!error) {
+        const res = await fetch(`${API_URL}/personas-usuarias/${confirmPendiente.id}`, {
+            method: "DELETE",
+        });
+        if (res.ok) {
             if (lienzoSeleccionado?.id === confirmPendiente.id) setLienzoSeleccionado(null);
             addToast("Perfil eliminado.", "info");
             await cargarPerfiles();
         } else {
-            addToast("Error al eliminar: " + error.message, "error");
+            addToast("Error al eliminar: " + (await res.text()), "error");
         }
         setConfirmPendiente(null);
     }
 
 
 async function validarPerfil(id: string) {
-    const { error } = await supabase
-        .from("persona_usuaria")
-        .update({ estado_perfil: "validado", completado: true })
-        .eq("id", id);
+    const res = await fetch(`${API_URL}/personas-usuarias/${id}/validar`, {
+        method: "PATCH",
+    });
 
-    if (!error) {
+    if (res.ok) {
         addToast("Perfil validado correctamente.", "success");
         await cargarPerfiles();
 
@@ -371,7 +380,7 @@ async function validarPerfil(id: string) {
             })
         );
     } else {
-        addToast("Error al validar: " + error.message, "error");
+        addToast("Error al validar: " + (await res.text()), "error");
     }
 }
 
@@ -404,10 +413,6 @@ async function validarPerfil(id: string) {
                                 ["Definir Personas", "personas", true],
                                 ["Habilitación y Expectativas", "habilitacion", false],
                                 ["Definir Necesidades", "necesidades", false],
-                                ["Idear", "idear", false],
-                                ["Prototipar", "prototipar", false],
-                                ["Evaluar", "evaluar", false],
-                                ["Implementar", "implementar", false],
                             ] as [string, string | null, boolean][]
                         ).map(([label, route, active]) => (
                             <button
@@ -435,7 +440,7 @@ async function validarPerfil(id: string) {
 
                                 <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">Personas</h1>
                                 <p className="mt-1 text-slate-500 leading-relaxed">
-                                    Alineación completa con el estándar metodológico UXLab.
+                                    Describe perfiles de personas usuarias para comprender roles, barreras, motivaciones y relacion con el servicio.
                                 </p>
                             </div>
                         </div>

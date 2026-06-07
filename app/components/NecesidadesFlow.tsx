@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, X, User } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
-import { supabase } from "./supabaseClient";
 
 
 interface Persona {
@@ -54,7 +53,9 @@ interface Toast {
 }
 
 
-const PROYECTO_ID = "31576cfb-4c12-4080-a8c3-1f422b4830de";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const PROYECTO_ID =
+    process.env.NEXT_PUBLIC_PROYECTO_ID || "31576cfb-4c12-4080-a8c3-1f422b4830de";
 const TOAST_DURATION_MS = 4000;
 
 const FORM_INICIAL: FormState = {
@@ -275,40 +276,44 @@ export default function NecesidadesFlow({
 
 
     const cargarPersonas = useCallback(async (): Promise<Persona[]> => {
-        const { data, error } = await supabase
-            .from("persona_usuaria")
-            .select("id, nombre_arquetipo, rol")
-            .eq("proyecto_id", PROYECTO_ID)
-            .order("created_at", { ascending: true });
+        try {
+            const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/personas-usuarias`);
 
-        if (error) {
-            addToast("Error al cargar perfiles: " + error.message, "error");
+            if (!res.ok) throw new Error(await res.text());
+
+            const json = await res.json();
+            const resultado = (json.personas_usuarias ?? []).map(mapPersonaUsuaria);
+            setPersonas(resultado);
+            return resultado;
+        } catch (error) {
+            addToast(
+                "Error al cargar perfiles: " + (error instanceof Error ? error.message : "error desconocido"),
+                "error"
+            );
             setPersonas([]);
             return [];
         }
-
-        const resultado = (data ?? []).map(mapPersonaUsuaria);
-        setPersonas(resultado);
-        return resultado;
     }, [addToast]);
 
     const cargarNecesidades = useCallback(async () => {
-        const { data, error } = await supabase
-            .from("necesidad")
-            .select("*")
-            .eq("proyecto_id", PROYECTO_ID)
-            .order("created_at", { ascending: false });
+        try {
+            const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/necesidades`);
 
-        if (error) {
-            addToast("Error al cargar necesidades: " + error.message, "error");
-            return;
+            if (!res.ok) throw new Error(await res.text());
+
+            const json = await res.json();
+            const resultado = (json.necesidades ?? []).map(mapNecesidad);
+            setNecesidades(resultado);
+            setLienzoSeleccionado((prev) =>
+                prev ? (resultado.find((n: Necesidad) => n.id === prev.id) ?? null) : null
+            );
+        } catch (error) {
+            addToast(
+                "Error al cargar necesidades: " +
+                    (error instanceof Error ? error.message : "error desconocido"),
+                "error"
+            );
         }
-
-        const resultado = (data ?? []).map(mapNecesidad);
-        setNecesidades(resultado);
-        setLienzoSeleccionado((prev) =>
-            prev ? (resultado.find((n) => n.id === prev.id) ?? null) : null
-        );
     }, [addToast]);
 
     useEffect(() => {
@@ -355,16 +360,23 @@ export default function NecesidadesFlow({
 
         const datosNecesidad = formToNecesidadDb(form);
 
-        const { error } = idEnEdicion
-            ? await supabase.from("necesidad").update(datosNecesidad).eq("id", idEnEdicion)
-            : await supabase
-                .from("necesidad")
-                .insert([{ ...datosNecesidad, proyecto_id: PROYECTO_ID }]);
+        const res = await fetch(
+            idEnEdicion ? `${API_URL}/necesidades/${idEnEdicion}` : `${API_URL}/necesidades`,
+            {
+                method: idEnEdicion ? "PATCH" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(
+                    idEnEdicion
+                        ? datosNecesidad
+                        : { ...datosNecesidad, proyecto_id: PROYECTO_ID }
+                ),
+            }
+        );
 
         setLoading(false);
 
-        if (error) {
-            addToast("Error al guardar: " + error.message, "error");
+        if (!res.ok) {
+            addToast("Error al guardar: " + (await res.text()), "error");
         } else {
             addToast(idEnEdicion ? "¡Necesidad actualizada!" : "¡Necesidad guardada!", "success");
             resetForm(personas);
@@ -398,16 +410,15 @@ export default function NecesidadesFlow({
 
     async function confirmarEliminar() {
         if (!confirmPendiente) return;
-        const { error } = await supabase
-            .from("necesidad")
-            .delete()
-            .eq("id", confirmPendiente.id);
-        if (!error) {
+        const res = await fetch(`${API_URL}/necesidades/${confirmPendiente.id}`, {
+            method: "DELETE",
+        });
+        if (res.ok) {
             if (lienzoSeleccionado?.id === confirmPendiente.id) setLienzoSeleccionado(null);
             addToast("Necesidad eliminada.", "info");
             await cargarNecesidades();
         } else {
-            addToast("Error al eliminar: " + error.message, "error");
+            addToast("Error al eliminar: " + (await res.text()), "error");
         }
         setConfirmPendiente(null);
     }
@@ -429,15 +440,16 @@ export default function NecesidadesFlow({
             estado: "Validado",
         };
 
-        const { error } = await supabase
-  .from("necesidad")
-  .update({
-    estado: "Validado",
-    sugerencia_ia: serializarMetaNecesidad(formValidado),
-  })
-  .eq("id", id);
+        const res = await fetch(`${API_URL}/necesidades/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                estado: "Validado",
+                sugerencia_ia: serializarMetaNecesidad(formValidado),
+            }),
+        });
 
-        if (!error) {
+        if (res.ok) {
     addToast("Necesidad validada correctamente.", "success");
     await cargarNecesidades();
 
@@ -447,7 +459,7 @@ export default function NecesidadesFlow({
         })
     );
 } else {
-    addToast("Error al validar: " + error.message, "error");
+    addToast("Error al validar: " + (await res.text()), "error");
 }
     }
 
@@ -480,10 +492,6 @@ export default function NecesidadesFlow({
                                 ["Definir Personas", "personas", false],
                                 ["Habilitación y Expectativas", "habilitacion", false],
                                 ["Definir Necesidades", "necesidades", true],
-                                ["Idear", "idear", false],
-                                ["Prototipar", "prototipar", false],
-                                ["Evaluar", "evaluar", false],
-                                ["Implementar", "implementar", false],
                             ] as [string, string | null, boolean][]
                         ).map(([label, route, active]) => (
                             <button
@@ -511,7 +519,7 @@ export default function NecesidadesFlow({
 
                                 <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">Necesidades</h1>
                                 <p className="mt-1 text-slate-500 leading-relaxed">
-                                    Mapeo e identificación exacta de fricciones y roles del servicio.
+                                    Comprende el problema completo, las motivaciones de las personas y las oportunidades de mejora del servicio.
                                 </p>
                             </div>
                         </div>

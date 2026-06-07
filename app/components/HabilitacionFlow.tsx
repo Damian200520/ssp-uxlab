@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
-import { supabase } from "./supabaseClient";
 
 const NIVELES = ["Bajo", "Medio", "Alto"] as const;
 const HAB_META_PREFIX = "::uxlab-hab-meta::";
@@ -359,19 +358,12 @@ export default function HabilitacionFlow({
 
   async function cargarPersonasUsuarias() {
     try {
-      const { data, error } = await supabase
-        .from("persona_usuaria")
-        .select("*")
-        .eq("proyecto_id", PROYECTO_ID)
-        .order("created_at", { ascending: true });
+      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/personas-usuarias`);
 
-      if (error) {
-        console.warn("No se pudieron cargar personas usuarias:", error);
-        setMessage("No se pudieron cargar los perfiles de personas usuarias.");
-        return;
-      }
+      if (!res.ok) throw new Error(await res.text());
 
-      const mappedData = (data || []).map(normalizarPersonaUsuaria);
+      const json = await res.json();
+      const mappedData = (json.personas_usuarias || []).map(normalizarPersonaUsuaria);
       setPersonasUsuarias(mappedData);
 
       if (mappedData.length > 0 && !perfilSeleccionado) {
@@ -379,22 +371,17 @@ export default function HabilitacionFlow({
       }
     } catch (error) {
       console.warn("Error general al cargar personas usuarias:", error);
+      setMessage("No se pudieron cargar los perfiles de personas usuarias.");
     }
   }
   async function cargarHabilitaciones() {
     try {
-      const { data, error } = await supabase
-        .from("habilitacion")
-        .select("*")
-        .eq("proyecto_id", PROYECTO_ID)
-        .order("created_at", { ascending: false });
+      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/habilitaciones`);
 
-      if (error) {
-        console.warn("Error al cargar habilitaciones:", error);
-        return;
-      }
+      if (!res.ok) throw new Error(await res.text());
 
-      const habilitacionesMapeadas = (data || []).map(normalizarHabilitacion);
+      const json = await res.json();
+      const habilitacionesMapeadas = (json.habilitaciones || []).map(normalizarHabilitacion);
       setHabilitaciones(habilitacionesMapeadas);
 
       if (perfilSeleccionado) {
@@ -410,34 +397,26 @@ export default function HabilitacionFlow({
 
   async function cargarExpectativas() {
     try {
-      const { data, error } = await supabase
-        .from("expectativa")
-        .select("*")
-        .eq("proyecto_id", PROYECTO_ID)
-        .order("created_at", { ascending: false });
+      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/expectativas`);
 
-      if (error) {
-        throw error;
-      }
+      if (!res.ok) throw new Error(await res.text());
 
-      setExpectativas((data || []) as Expectativa[]);
+      const json = await res.json();
+      setExpectativas((json.expectativas || []) as Expectativa[]);
     } catch (error) {
       console.warn("Error al listar expectativas:", error);
     }
   }
 
   async function obtenerExpectativaPorId(id: string) {
-    const { data, error } = await supabase
-      .from("expectativa")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const res = await fetch(`${API_URL}/expectativas/${id}`);
 
-    if (error) {
+    if (!res.ok) {
       throw new Error("No se pudo cargar la expectativa.");
     }
 
-    return data as Expectativa;
+    const json = await res.json();
+    return json.data as Expectativa;
   }
 
   async function editarExpectativa(id: string) {
@@ -506,26 +485,26 @@ export default function HabilitacionFlow({
         ),
       };
 
-      const operacion = editingHabilitacionId
-        ? supabase
-            .from("habilitacion")
-            .update(datosGuardar)
-            .eq("id", editingHabilitacionId)
-            .select()
-            .single()
-        : supabase
-            .from("habilitacion")
-            .insert([{ ...datosGuardar, proyecto_id: PROYECTO_ID }])
-            .select()
-            .single();
+      const res = await fetch(
+        editingHabilitacionId
+          ? `${API_URL}/habilitacion/${editingHabilitacionId}`
+          : `${API_URL}/habilitacion`,
+        {
+          method: editingHabilitacionId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            editingHabilitacionId
+              ? datosGuardar
+              : { ...datosGuardar, proyecto_id: PROYECTO_ID }
+          ),
+        }
+      );
 
-      const { data, error } = await operacion;
+      if (!res.ok) throw new Error(await leerErrorBackend(res));
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      const json = await res.json();
 
-      const guardada = normalizarHabilitacion(data);
+      const guardada = normalizarHabilitacion(json.data);
       cargarFormularioHabilitacion(guardada);
       await cargarHabilitaciones();
       setTab("registros");
@@ -561,20 +540,22 @@ export default function HabilitacionFlow({
         analisis_ia: observaciones || null,
       };
 
-      const operacion = editingExpectativaId
-        ? supabase
-            .from("expectativa")
-            .update(payloadBase)
-            .eq("id", editingExpectativaId)
-        : supabase
-            .from("expectativa")
-            .insert([{ ...payloadBase, proyecto_id: PROYECTO_ID }]);
+      const res = await fetch(
+        editingExpectativaId
+          ? `${API_URL}/expectativas/${editingExpectativaId}`
+          : `${API_URL}/expectativas`,
+        {
+          method: editingExpectativaId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            editingExpectativaId
+              ? payloadBase
+              : { ...payloadBase, proyecto_id: PROYECTO_ID }
+          ),
+        }
+      );
 
-      const { error } = await operacion;
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (!res.ok) throw new Error(await leerErrorBackend(res));
 
       setEditingExpectativaId(null);
       setExpectativaForm({
@@ -603,14 +584,11 @@ export default function HabilitacionFlow({
     if (!ok) return;
 
     try {
-      const { error } = await supabase
-        .from("expectativa")
-        .delete()
-        .eq("id", id);
+      const res = await fetch(`${API_URL}/expectativas/${id}`, {
+        method: "DELETE",
+      });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (!res.ok) throw new Error(await leerErrorBackend(res));
 
       await cargarExpectativas();
       setMessage("Expectativa eliminada correctamente.");
@@ -636,12 +614,11 @@ export default function HabilitacionFlow({
     if (!ok) return;
 
     try {
-      const { error } = await supabase
-        .from("habilitacion")
-        .delete()
-        .eq("id", id);
+      const res = await fetch(`${API_URL}/habilitacion/${id}`, {
+        method: "DELETE",
+      });
 
-      if (error) throw new Error(error.message);
+      if (!res.ok) throw new Error(await leerErrorBackend(res));
 
       await cargarHabilitaciones();
       setMessage("Habilitación eliminada correctamente.");
@@ -669,19 +646,20 @@ export default function HabilitacionFlow({
         nivel_digital: hab.nivel_digital,
       });
 
-      const { error } = await supabase
-        .from("habilitacion")
-        .update({
+      const res = await fetch(`${API_URL}/habilitacion/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           descripcion_habilitacion: serializarDescripcionHabilitacion(
             formHab,
             hab.persona_usuaria_id,
             "validado",
             true
           ),
-        })
-        .eq("id", id);
+        }),
+      });
 
-      if (error) throw new Error(error.message);
+      if (!res.ok) throw new Error(await leerErrorBackend(res));
 
       const perfil = personasUsuarias.find((p) => p.id === hab.persona_usuaria_id);
       if (perfil) seleccionarPerfil(perfil);
@@ -713,10 +691,6 @@ window.dispatchEvent(
                 ["Definir Personas", "personas", false],
                 ["Habilitación y Expectativas", "habilitacion", true],
                 ["Definir Necesidades", "necesidades", false],
-                ["Idear", "idear", false],
-                ["Prototipar", "prototipar", false],
-                ["Evaluar", "evaluar", false],
-                ["Implementar", "implementar", false],
               ] as [string, string | null, boolean][]
             ).map(([label, route, active]) => (
               <button

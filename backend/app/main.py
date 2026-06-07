@@ -1,5 +1,8 @@
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.database import get_connection
 
 from app.models import (
@@ -12,17 +15,33 @@ from app.models import (
     ExpectativaCreate,
     NecesidadCreate,
     VinculacionCreate,
+    VinculacionUpdate,
     IndicadorCreate,
+    IndicadorUpdate,
     MomentoCriticoCreate,
+    MomentoCriticoUpdate,
     CalendarizacionCreate,
     CalendarizacionUpdate,
     UsuarioAccesoCreate,
     InvestigacionUpdate,
+    PersonaUsuariaUpdate,
+    HabilitacionUpdate,
+    ExpectativaUpdate,
+    NecesidadUpdate,
+    EvidenciaCreate,
+    EvidenciaArchivoCreate,
+    EvidenciaUpdate,
     IASintesisRequest,
     IASugerenciaRequest,
     IAMejoraRedaccionRequest,
 )
-from app import crud, ai_service
+from app import crud, ai_service, storage_service
+
+FRONTEND_URLS = [
+    url.strip()
+    for url in os.getenv("FRONTEND_URLS", "").split(",")
+    if url.strip()
+]
 
 
 app = FastAPI(
@@ -31,12 +50,15 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.mount("/uploads", StaticFiles(directory=str(storage_service.UPLOAD_ROOT)), name="uploads")
+
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        *FRONTEND_URLS,
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -57,6 +79,13 @@ def health_check():
     return {
         "status": "ok",
         "service": "backend-uxlab",
+        "storage": {
+            "mode": storage_service.EVIDENCIA_STORAGE_MODE,
+            "supabase_configured": bool(
+                storage_service.SUPABASE_URL and storage_service.SUPABASE_SERVICE_ROLE_KEY
+            ),
+            "bucket": storage_service.SUPABASE_STORAGE_BUCKET,
+        },
     }
 
 @app.get("/db-test")
@@ -262,6 +291,57 @@ async def listar_personas_usuarias(proyecto_id: str):
 # Endpoints Habilitación
 # =========================
 
+@app.patch("/personas-usuarias/{persona_id}")
+async def actualizar_persona_usuaria(persona_id: str, data: PersonaUsuariaUpdate):
+    persona = await crud.actualizar_persona_usuaria(persona_id, data)
+
+    if not persona:
+        raise HTTPException(
+            status_code=404,
+            detail="Persona usuaria no encontrada."
+        )
+
+    return {
+        "message": "Persona usuaria actualizada correctamente en Supabase",
+        "data": persona,
+    }
+
+
+@app.patch("/personas-usuarias/{persona_id}/validar")
+async def validar_persona_usuaria(persona_id: str):
+    persona = await crud.actualizar_persona_usuaria(
+        persona_id,
+        PersonaUsuariaUpdate(estado_perfil="validado", completado=True),
+    )
+
+    if not persona:
+        raise HTTPException(
+            status_code=404,
+            detail="Persona usuaria no encontrada para validar."
+        )
+
+    return {
+        "message": "Persona usuaria validada correctamente",
+        "data": persona,
+    }
+
+
+@app.delete("/personas-usuarias/{persona_id}")
+async def eliminar_persona_usuaria(persona_id: str):
+    resultado = await crud.eliminar_persona_usuaria(persona_id)
+
+    if not resultado:
+        raise HTTPException(
+            status_code=404,
+            detail="Persona usuaria no encontrada para eliminar."
+        )
+
+    return {
+        "message": "Persona usuaria eliminada correctamente",
+        "data": resultado,
+    }
+
+
 @app.post("/habilitacion")
 async def crear_habilitacion(data: HabilitacionCreate):
     proyecto = await crud.obtener_proyecto(data.proyecto_id)
@@ -308,6 +388,56 @@ async def obtener_habilitacion_proyecto(proyecto_id: str):
 # Endpoints Expectativas
 # =========================
 
+@app.get("/proyectos/{proyecto_id}/habilitaciones")
+async def listar_habilitaciones_proyecto(proyecto_id: str):
+    proyecto = await crud.obtener_proyecto(proyecto_id)
+
+    if not proyecto:
+        raise HTTPException(
+            status_code=404,
+            detail="Proyecto no encontrado."
+        )
+
+    habilitaciones = await crud.listar_habilitaciones_por_proyecto(proyecto_id)
+
+    return {
+        "proyecto": proyecto,
+        "habilitaciones": habilitaciones,
+    }
+
+
+@app.patch("/habilitacion/{habilitacion_id}")
+async def actualizar_habilitacion(habilitacion_id: str, data: HabilitacionUpdate):
+    habilitacion = await crud.actualizar_habilitacion(habilitacion_id, data)
+
+    if not habilitacion:
+        raise HTTPException(
+            status_code=404,
+            detail="Habilitacion no encontrada para actualizar."
+        )
+
+    return {
+        "message": "Habilitacion actualizada correctamente",
+        "data": habilitacion,
+    }
+
+
+@app.delete("/habilitacion/{habilitacion_id}")
+async def eliminar_habilitacion(habilitacion_id: str):
+    resultado = await crud.eliminar_habilitacion(habilitacion_id)
+
+    if not resultado:
+        raise HTTPException(
+            status_code=404,
+            detail="Habilitacion no encontrada para eliminar."
+        )
+
+    return {
+        "message": "Habilitacion eliminada correctamente",
+        "data": resultado,
+    }
+
+
 @app.post("/expectativas")
 async def crear_expectativa(data: ExpectativaCreate):
     proyecto = await crud.obtener_proyecto(data.proyecto_id)
@@ -341,6 +471,54 @@ async def listar_expectativas(proyecto_id: str):
     return {
         "proyecto": proyecto,
         "expectativas": expectativas,
+    }
+
+
+@app.get("/expectativas/{expectativa_id}")
+async def obtener_expectativa(expectativa_id: str):
+    expectativa = await crud.obtener_expectativa_por_id(expectativa_id)
+
+    if not expectativa:
+        raise HTTPException(
+            status_code=404,
+            detail="Expectativa no encontrada."
+        )
+
+    return {
+        "message": "Expectativa obtenida correctamente",
+        "data": expectativa,
+    }
+
+
+@app.patch("/expectativas/{expectativa_id}")
+async def actualizar_expectativa(expectativa_id: str, data: ExpectativaUpdate):
+    expectativa = await crud.actualizar_expectativa(expectativa_id, data)
+
+    if not expectativa:
+        raise HTTPException(
+            status_code=404,
+            detail="Expectativa no encontrada para actualizar."
+        )
+
+    return {
+        "message": "Expectativa actualizada correctamente",
+        "data": expectativa,
+    }
+
+
+@app.delete("/expectativas/{expectativa_id}")
+async def eliminar_expectativa(expectativa_id: str):
+    resultado = await crud.eliminar_expectativa(expectativa_id)
+
+    if not resultado:
+        raise HTTPException(
+            status_code=404,
+            detail="Expectativa no encontrada para eliminar."
+        )
+
+    return {
+        "message": "Expectativa eliminada correctamente",
+        "data": resultado,
     }
 
 
@@ -387,6 +565,38 @@ async def listar_necesidades(proyecto_id: str):
 # Endpoints Vinculación
 # =========================
 
+@app.patch("/necesidades/{necesidad_id}")
+async def actualizar_necesidad(necesidad_id: str, data: NecesidadUpdate):
+    necesidad = await crud.actualizar_necesidad(necesidad_id, data)
+
+    if not necesidad:
+        raise HTTPException(
+            status_code=404,
+            detail="Necesidad no encontrada para actualizar."
+        )
+
+    return {
+        "message": "Necesidad actualizada correctamente",
+        "data": necesidad,
+    }
+
+
+@app.delete("/necesidades/{necesidad_id}")
+async def eliminar_necesidad(necesidad_id: str):
+    resultado = await crud.eliminar_necesidad(necesidad_id)
+
+    if not resultado:
+        raise HTTPException(
+            status_code=404,
+            detail="Necesidad no encontrada para eliminar."
+        )
+
+    return {
+        "message": "Necesidad eliminada correctamente",
+        "data": resultado,
+    }
+
+
 @app.post("/vinculaciones")
 async def crear_vinculacion(data: VinculacionCreate):
     proyecto = await crud.obtener_proyecto(data.proyecto_id)
@@ -420,6 +630,22 @@ async def listar_vinculaciones(proyecto_id: str):
     return {
         "proyecto": proyecto,
         "vinculaciones": vinculaciones,
+    }
+
+
+@app.patch("/vinculaciones/{vinculacion_id}")
+async def actualizar_vinculacion(vinculacion_id: str, data: VinculacionUpdate):
+    vinculacion = await crud.actualizar_vinculacion(vinculacion_id, data)
+
+    if not vinculacion:
+        raise HTTPException(
+            status_code=404,
+            detail="Vinculacion no encontrada para actualizar."
+        )
+
+    return {
+        "message": "Vinculacion actualizada correctamente",
+        "data": vinculacion,
     }
 
 
@@ -460,6 +686,22 @@ async def listar_indicadores(proyecto_id: str):
     return {
         "proyecto": proyecto,
         "indicadores": indicadores,
+    }
+
+
+@app.patch("/indicadores/{indicador_id}")
+async def actualizar_indicador(indicador_id: str, data: IndicadorUpdate):
+    indicador = await crud.actualizar_indicador(indicador_id, data)
+
+    if not indicador:
+        raise HTTPException(
+            status_code=404,
+            detail="Indicador no encontrado para actualizar."
+        )
+
+    return {
+        "message": "Indicador actualizado correctamente",
+        "data": indicador,
     }
 
 # =========================
@@ -504,6 +746,22 @@ async def listar_momentos_criticos(proyecto_id: str):
 # =========================
 # Herramientas del Propósito 1
 # =========================
+
+@app.patch("/momentos-criticos/{momento_id}")
+async def actualizar_momento_critico(momento_id: str, data: MomentoCriticoUpdate):
+    momento = await crud.actualizar_momento_critico(momento_id, data)
+
+    if not momento:
+        raise HTTPException(
+            status_code=404,
+            detail="Momento critico no encontrado para actualizar."
+        )
+
+    return {
+        "message": "Momento critico actualizado correctamente",
+        "data": momento,
+    }
+
 
 @app.get("/herramientas/proposito/{proposito_id}")
 async def listar_herramientas_proposito(proposito_id: int):
@@ -599,6 +857,144 @@ async def eliminar_calendarizacion(calendarizacion_id: str):
 
     return {
         "message": "Actividad calendarizada eliminada correctamente",
+        "data": resultado,
+    }
+
+
+# =========================
+# Evidencias
+# =========================
+
+@app.post("/evidencias")
+async def crear_evidencia(data: EvidenciaCreate):
+    proyecto = await crud.obtener_proyecto(data.proyecto_id)
+
+    if not proyecto:
+        raise HTTPException(
+            status_code=404,
+            detail="Proyecto no encontrado."
+        )
+
+    evidencia = await crud.crear_evidencia(data)
+
+    return {
+        "message": "Evidencia creada correctamente",
+        "data": evidencia,
+    }
+
+
+@app.post("/evidencias/archivo")
+async def crear_evidencia_archivo(data: EvidenciaArchivoCreate):
+    proyecto = await crud.obtener_proyecto(data.proyecto_id)
+
+    if not proyecto:
+        raise HTTPException(
+            status_code=404,
+            detail="Proyecto no encontrado."
+        )
+
+    url_archivo = storage_service.guardar_archivo_evidencia(data)
+    evidencia = await crud.crear_evidencia(
+        EvidenciaCreate(
+            proyecto_id=data.proyecto_id,
+            calendarizacion_id=data.calendarizacion_id,
+            etapa=data.etapa,
+            nombre_archivo=data.nombre_archivo,
+            tipo_archivo=data.tipo_archivo,
+            url_storage=url_archivo,
+            descripcion=data.descripcion,
+            responsable=data.responsable,
+        )
+    )
+
+    return {
+        "message": "Evidencia con archivo creada correctamente",
+        "data": evidencia,
+    }
+
+
+@app.get("/proyectos/{proyecto_id}/evidencias")
+async def listar_evidencias_proyecto(proyecto_id: str):
+    proyecto = await crud.obtener_proyecto(proyecto_id)
+
+    if not proyecto:
+        raise HTTPException(
+            status_code=404,
+            detail="Proyecto no encontrado."
+        )
+
+    evidencias = await crud.listar_evidencias_por_proyecto(proyecto_id)
+
+    return {
+        "proyecto": proyecto,
+        "evidencias": evidencias,
+    }
+
+
+@app.patch("/evidencias/{evidencia_id}")
+async def actualizar_evidencia(evidencia_id: str, data: EvidenciaUpdate):
+    evidencia = await crud.actualizar_evidencia(evidencia_id, data)
+
+    if not evidencia:
+        raise HTTPException(
+            status_code=404,
+            detail="Evidencia no encontrada para actualizar."
+        )
+
+    return {
+        "message": "Evidencia actualizada correctamente",
+        "data": evidencia,
+    }
+
+
+@app.patch("/evidencias/{evidencia_id}/archivo")
+async def actualizar_evidencia_archivo(evidencia_id: str, data: EvidenciaArchivoCreate):
+    proyecto = await crud.obtener_proyecto(data.proyecto_id)
+
+    if not proyecto:
+        raise HTTPException(
+            status_code=404,
+            detail="Proyecto no encontrado."
+        )
+
+    url_archivo = storage_service.guardar_archivo_evidencia(data)
+    evidencia = await crud.actualizar_evidencia(
+        evidencia_id,
+        EvidenciaUpdate(
+            calendarizacion_id=data.calendarizacion_id,
+            etapa=data.etapa,
+            nombre_archivo=data.nombre_archivo,
+            tipo_archivo=data.tipo_archivo,
+            url_storage=url_archivo,
+            descripcion=data.descripcion,
+            responsable=data.responsable,
+        )
+    )
+
+    if not evidencia:
+        raise HTTPException(
+            status_code=404,
+            detail="Evidencia no encontrada para actualizar."
+        )
+
+    return {
+        "message": "Archivo de evidencia actualizado correctamente",
+        "data": evidencia,
+    }
+
+
+@app.delete("/evidencias/{evidencia_id}")
+async def eliminar_evidencia(evidencia_id: str):
+    resultado = await crud.eliminar_evidencia(evidencia_id)
+
+    if not resultado:
+        raise HTTPException(
+            status_code=404,
+            detail="Evidencia no encontrada para eliminar."
+        )
+
+    return {
+        "message": "Evidencia eliminada correctamente",
         "data": resultado,
     }
 
@@ -843,4 +1239,3 @@ async def ia_mejorar_redaccion(data: IAMejoraRedaccionRequest):
         "modo": ai_service.MODO,
         "resultado": resultado,
     }
-

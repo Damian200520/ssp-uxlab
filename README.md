@@ -42,7 +42,6 @@ ssp-uxlab/
 │   │   ├── InvestigacionFlow.tsx
 │   │   ├── NecesidadesFlow.tsx
 │   │   ├── PersonasFlow.tsx
-│   │   └── supabaseClient.ts
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx                  # Página principal (3 vistas)
@@ -67,8 +66,6 @@ ssp-uxlab/
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_PROYECTO_ID=ID_DEL_PROYECTO
-NEXT_PUBLIC_SUPABASE_URL=URL_DE_SUPABASE
-NEXT_PUBLIC_SUPABASE_ANON_KEY=CLAVE_PUBLICA_SUPABASE
 ```
 
 ### Backend (`backend/.env`)
@@ -76,6 +73,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=CLAVE_PUBLICA_SUPABASE
 ```
 DATABASE_URL=URL_DE_CONEXION_POSTGRESQL
 IA_MODO=demo
+SUPABASE_URL=https://TU_PROYECTO.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=SOLO_EN_BACKEND
+SUPABASE_STORAGE_BUCKET=evidencias-uxlab
+EVIDENCIA_STORAGE_MODE=supabase
+FRONTEND_URLS=https://URL_FRONTEND_DESPLEGADA
 ```
 
 > **Importante:** No subir archivos `.env` ni `.env.local` al repositorio. El `.gitignore` ya incluye la regla `.env*` para evitarlo.
@@ -115,14 +117,16 @@ Actualmente el módulo de inteligencia artificial opera en **modo demo** (`IA_MO
 - Los archivos `.env` y `.env.local` están excluidos del repositorio mediante `.gitignore`.
 - No se deben subir contraseñas, DATABASE_URL, claves privadas ni archivos de entorno con valores reales. Las variables públicas del frontend deben configurarse en el entorno de despliegue correspondiente.
 - La conexión a la base de datos usa SSL, aunque en entorno local está deshabilitada la verificación de certificado.
+- La clave `SUPABASE_SERVICE_ROLE_KEY` solo debe configurarse en el backend desplegado. Nunca debe usarse como variable `NEXT_PUBLIC_*`.
 - Actualmente no hay autenticación; el "acceso" almacena datos del usuario en `localStorage`.
-- RLS de Supabase no se activa directamente en la demo actual porque algunos flujos aún usan `NEXT_PUBLIC_SUPABASE_ANON_KEY` desde frontend. El plan de seguridad del Hito 3 queda documentado en `SEGURIDAD_HITO3.md`.
+- El frontend consume FastAPI para las operaciones del Propósito 1; no mantiene un cliente Supabase directo en componentes React.
+- RLS de Supabase queda como deuda de seguridad productiva porque aún falta autenticación real y membresía por proyecto. El plan de seguridad del Hito 3 queda documentado en `SEGURIDAD_HITO3.md`.
 - La auditoría y el plan de mitigación RLS quedan documentados en `SEGURIDAD_HITO3.md`. No se incluyen scripts SQL ejecutables en el repositorio para evitar confusión durante la demo.
 
 ## Próximos pasos
 
 - Completar las etapas de Vinculación, Medición y Momentos críticos (pendientes de desarrollo).
-- Migrar las consultas directas a Supabase desde los componentes frontend hacia el backend FastAPI.
+- Fortalecer la validación backend por etapa y agregar pruebas automatizadas de persistencia.
 - Extraer componentes duplicados (sidebar, toasts, tab bar) para reducir código repetido.
 - Implementar autenticación real (JWT / Supabase Auth).
 - Activar RLS por `proyecto_id` una vez que exista Supabase Auth y membresía por proyecto.

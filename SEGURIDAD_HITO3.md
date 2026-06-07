@@ -2,24 +2,25 @@
 
 ## Estado Actual
 
-El MVP tiene Row Level Security (RLS) habilitado a nivel de varias tablas en Supabase, pero todavía no cuenta con seguridad productiva por institución, usuario o membresía de proyecto.
+El MVP tiene Row Level Security (RLS) habilitado a nivel de varias tablas en Supabase, pero todavia no cuenta con seguridad productiva por institucion, usuario o membresia de proyecto.
 
-El acceso inicial registra datos de usuario y mantiene sesión local en `localStorage`, pero no utiliza Supabase Auth ni `auth.uid()`. Además, algunas políticas existentes permiten acceso a roles `anon` y `authenticated` con condiciones abiertas.
+El acceso inicial registra datos de usuario y mantiene sesion local en `localStorage`, pero no utiliza Supabase Auth ni `auth.uid()`. Las operaciones del Proposito 1 se canalizan desde el frontend hacia FastAPI, y FastAPI consulta Supabase/PostgreSQL desde el backend.
+
+Algunas politicas existentes permiten acceso a roles `anon` y `authenticated` con condiciones abiertas. Por eso RLS esta encendido tecnicamente, pero aun no restringe por usuario, institucion o proyecto.
 
 ## Hallazgo Principal
 
-La aplicación mezcla dos caminos de datos:
+La aplicacion ya no mantiene componentes React conectados directamente a Supabase para las etapas del Proposito 1. El camino principal de datos queda:
 
-- **FastAPI -> PostgreSQL/Supabase**: usado por Investigación, Calendarización, Resultados, Ruta y otros endpoints.
-- **Frontend -> Supabase directo con anon key**: usado todavía en Personas, Habilitación, Necesidades y Evidencias.
+- **Frontend -> FastAPI -> PostgreSQL/Supabase**: usado por Investigacion, Personas, Habilitacion y expectativas, Necesidades, Vinculacion, Medicion, Momentos criticos, Calendarizacion, Evidencias, Resultados y Ruta.
 
-Endurecer RLS directamente sobre la demo puede romper flujos actuales que dependen de `NEXT_PUBLIC_SUPABASE_ANON_KEY` sin Supabase Auth.
+Esto reduce la exposicion del frontend y centraliza validaciones, errores y reglas de acceso en backend. Sin embargo, endurecer RLS directamente sobre la demo todavia requiere autenticacion real y membresia por proyecto para evitar bloquear operaciones legitimas.
 
-## Auditoría RLS Ejecutada
+## Auditoria RLS Ejecutada
 
-Se ejecutaron consultas de solo lectura contra el catálogo PostgreSQL de Supabase (`pg_class`, `pg_policies` y `pg_enum`). No se modificaron tablas, datos ni políticas.
+Se ejecutaron consultas de solo lectura contra el catalogo PostgreSQL de Supabase (`pg_class`, `pg_policies` y `pg_enum`). No se modificaron tablas, datos ni politicas.
 
-Se confirmó `rls_enabled = true` en tablas principales como:
+Se confirmo `rls_enabled = true` en tablas principales como:
 
 - `calendarizacion_actividad`
 - `evidencia`
@@ -35,14 +36,14 @@ Se confirmó `rls_enabled = true` en tablas principales como:
 - `usuario`
 - `vinculacion`
 
-Las políticas observadas se concentran en `evidencia`, `expectativa`, `habilitacion`, `necesidad` y `persona_usuaria`. Permiten roles `anon` y `authenticated` con condiciones abiertas:
+Las politicas observadas se concentran en `evidencia`, `expectativa`, `habilitacion`, `necesidad` y `persona_usuaria`. Permiten roles `anon` y `authenticated` con condiciones abiertas:
 
 - `qual = true`
 - `with_check = true`
 
-Esto significa que RLS está encendido técnicamente, pero aún no restringe por `proyecto_id`, usuario autenticado ni membresía institucional.
+Esto significa que RLS esta encendido tecnicamente, pero aun no restringe por `proyecto_id`, usuario autenticado ni membresia institucional.
 
-## Auditoría de Enums
+## Auditoria de Enums
 
 Valores confirmados:
 
@@ -51,21 +52,21 @@ Valores confirmados:
 
 Hallazgo:
 
-- `estado_necesidad` contiene valores mezclados por formato y capitalización, como `pendiente`, `Pendiente`, `en_proceso`, `Borrador`, `Validado`, `En análisis`, `Priorizada` y `Resuelta`.
+- `estado_necesidad` contiene valores mezclados por formato y capitalizacion, como `pendiente`, `Pendiente`, `en_proceso`, `Borrador`, `Validado`, `En analisis`, `Priorizada` y `Resuelta`.
 
-Este punto queda como deuda de normalización antes de endurecer validaciones backend o políticas RLS.
+Este punto queda como deuda de normalizacion antes de endurecer validaciones backend o politicas RLS.
 
-## Decisión Técnica
+## Decision Tecnica
 
-No se incluyen scripts SQL ejecutables en el repositorio para evitar confusión del equipo y evitar una activación accidental sobre la demo.
+No se incluyen scripts SQL ejecutables en el repositorio para evitar confusion del equipo y evitar una activacion accidental sobre la demo.
 
-Para una activación productiva futura se propone:
+Para una activacion productiva futura se propone:
 
-- Implementar Supabase Auth o autenticación equivalente.
-- Asociar usuarios a proyectos mediante una tabla de membresía.
-- Migrar operaciones directas de frontend hacia FastAPI o autenticarlas correctamente.
-- Definir políticas RLS por `proyecto_id`.
-- Probar aislamiento entre usuarios y proyectos antes de producción.
+- Implementar Supabase Auth o autenticacion equivalente.
+- Asociar usuarios a proyectos mediante una tabla de membresia.
+- Mantener operaciones del frontend mediadas por FastAPI y agregar validacion de permisos por usuario/proyecto.
+- Definir politicas RLS por `proyecto_id`.
+- Probar aislamiento entre usuarios y proyectos antes de produccion.
 
 ## Evidencias Para El Informe
 
@@ -74,11 +75,9 @@ Para una activación productiva futura se propone:
 - Captura de condiciones abiertas `qual = true` / `with_check = true`.
 - Captura de enums reales de Supabase.
 - Captura de este documento.
+- Captura del frontend consumiendo datos por FastAPI.
+- Captura de endpoints FastAPI del Proposito 1 respondiendo correctamente.
 
-## Frase Sugerida Para Presentación
+## Frase Sugerida Para Presentacion
 
-> La auditoría muestra que RLS está habilitado en tablas principales, pero varias políticas siguen abiertas para `anon` y `authenticated` con condiciones `true`. No se endurecieron directamente en la demo porque el MVP aún conserva flujos con acceso directo desde frontend usando anon key. Como mitigación del Hito 3, se documentó el riesgo, se confirmó el estado real de Supabase y se definió una ruta futura de seguridad por `proyecto_id`, condicionada a Supabase Auth y membresía por proyecto.
-
-## Riesgo Residual
-
-Mientras no se reemplacen las políticas abiertas por RLS con Supabase Auth y membresía por proyecto, el MVP debe considerarse una demo controlada y no un despliegue productivo multiinstitución.
+> La auditoria muestra que RLS esta habilitado en tablas principales, pero varias politicas siguen abiertas para `anon` y `authenticated` con condiciones `true`. Como mitigacion del Hito 3, el frontend del Proposito 1 fue integrado con FastAPI para evitar operaciones directas desde componentes React hacia Supabase. El endurecimiento productivo de RLS queda condicionado a Supabase Auth, membresia por proyecto y validacion de permisos por `proyecto_id`.

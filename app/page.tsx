@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, ArrowRight, ArrowLeft, Loader2, Lock, CalendarDays } from "lucide-react";
+import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, ArrowRight, ArrowLeft, Loader2, Lock, CalendarDays, TrendingUp } from "lucide-react";
 import InvestigacionFlow from "./components/InvestigacionFlow";
 import PersonasFlow from "./components/PersonasFlow";
 import HabilitacionFlow from "./components/HabilitacionFlow";
@@ -9,6 +9,13 @@ import NecesidadesFlow from "./components/NecesidadesFlow";
 import EvidenciasFlow from "./components/EvidenciasFlow";
 import CatalogoHerramientasProp1 from "./components/CatalogoHerramientasProp1";
 import CalendarizacionProp1 from "./components/CalendarizacionProp1";
+import EjecucionPasoAPasoProp1 from "./components/EjecucionPasoAPasoProp1";
+import ResultadosActividadProp1 from "./components/ResultadosActividadProp1";
+import TrazabilidadProcesoProp1 from "./components/TrazabilidadProcesoProp1";
+import DashboardAvanceProp1 from "./components/DashboardAvanceProp1";
+import VinculacionFlow from "./components/VinculacionFlow";
+import MedicionFlow from "./components/MedicionFlow";
+import MomentosCriticosFlow from "./components/MomentosCriticosFlow";
 import type { FlujoHerramienta } from "./data/herramientasProp1";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -20,12 +27,16 @@ type Vista = "acceso" | "propositos" | "proposito1";
 
 type FlujoActivo =
   | "catalogo"
+  | "ejecucion"
+  | "dashboard"
+  | "trazabilidad"
   | "investigacion"
   | "personas"
   | "habilitacion"
   | "necesidades"
   | "calendarizacion"
   | "evidencias"
+  | "resultados"
   | "vinculacion"
   | "medicion"
   | "momentos";
@@ -165,11 +176,15 @@ function flujoDesdeEtapa(etapa: RutaEtapa): FlujoActivo {
 
 function numeroDesdeFlujo(flujo: FlujoActivo) {
   if (flujo === "catalogo") return null;
+  if (flujo === "ejecucion") return null;
+  if (flujo === "dashboard") return null;
+  if (flujo === "trazabilidad") return null;
   if (flujo === "investigacion") return 1;
   if (flujo === "personas") return 2;
   if (flujo === "habilitacion") return 3;
   if (flujo === "necesidades") return 4;
   if (flujo === "calendarizacion") return null;
+  if (flujo === "resultados") return null;
   if (flujo === "vinculacion") return 5;
   if (flujo === "medicion") return 6;
   if (flujo === "momentos") return 7;
@@ -395,6 +410,24 @@ export default function Home() {
     setCurrent(flujoDesdeEtapa(etapa));
   }
 
+  function irAEtapaNumero(numeroEtapa: number) {
+    const etapa = ruta.find((item) => item.numero === numeroEtapa);
+
+    if (!etapa) {
+      setMensajeTipo("warning");
+      setMensaje("No se encontro la etapa solicitada en la ruta del proyecto.");
+      return;
+    }
+
+    if (etapa.estado_ruta === "bloqueada" && !etapa.puede_abrirse) {
+      setMensajeTipo("warning");
+      setMensaje(etapa.requisito || "Completa las etapas anteriores para habilitar este paso.");
+      return;
+    }
+
+    irAEtapa(etapa);
+  }
+
   function navegarFlujo(route: string | null) {
     if (!route) {
       setCurrent("catalogo");
@@ -403,11 +436,14 @@ export default function Home() {
 
     if (
       route === "investigacion" ||
+      route === "ejecucion" ||
+      route === "trazabilidad" ||
       route === "personas" ||
       route === "habilitacion" ||
       route === "necesidades" ||
       route === "calendarizacion" ||
       route === "evidencias" ||
+      route === "resultados" ||
       route === "vinculacion" ||
       route === "medicion" ||
       route === "momentos"
@@ -648,6 +684,8 @@ export default function Home() {
     ? "Lista para avanzar"
     : !rutaData
     ? "Pendiente de sincronización"
+    : etapaActiva?.estado_ruta === "actual"
+    ? "Activa"
     : etapaActiva?.estado_ruta === "incompleta"
     ? "Requiere revisión"
     : "En desarrollo";
@@ -710,52 +748,80 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 bg-slate-50/88">
-          <div className="flex gap-0 overflow-x-auto">
+        <div className="border-t border-slate-100 bg-white px-6 py-4">
+          <div className="mx-auto max-w-7xl space-y-4">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Herramientas</p>
+                <p className="text-sm font-semibold text-slate-800">Accesos de apoyo para gestionar el recorrido</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setCurrent("catalogo")}
-              className={`group flex min-w-[150px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 ${
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
                 current === "catalogo"
-                  ? "ux-tab-active border-teal-600 bg-white shadow-sm"
-                  : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
+                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Clipboard className={`h-5 w-5 ${current === "catalogo" ? "text-teal-700" : "text-slate-600"}`} strokeWidth={2.2} />
-                <span className={`text-xs font-semibold ${current === "catalogo" ? "text-teal-700" : "text-slate-700"}`}>
-                  Catálogo
-                </span>
-              </div>
-              <p className="mt-1 text-[10px] text-slate-400">
-                Herramientas del propósito
-              </p>
+                  <Clipboard className="h-4 w-4" strokeWidth={2.2} />
+                  Catalogo
             </button>
 
             <button
               type="button"
               onClick={() => setCurrent("calendarizacion")}
-              className={`group flex min-w-[165px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 bg-white ${
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
                 current === "calendarizacion"
-                  ? "ux-tab-active border-teal-600 shadow-sm"
-                  : "border-transparent hover:border-slate-200 hover:bg-slate-50"
+                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
-              <div className="flex items-center gap-1.5">
-                <CalendarDays className={`h-5 w-5 ${current === "calendarizacion" ? "text-teal-700" : "text-slate-600"}`} strokeWidth={2.2} aria-hidden="true" />
-                <span className={`text-xs font-semibold ${current === "calendarizacion" ? "text-teal-700" : "text-slate-700"}`}>
-                  Calendarización
-                </span>
-                <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 ring-1 ring-amber-200/50">
-                  MVP
-                </span>
-              </div>
-              <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
-                Fechas y responsables
-              </p>
+                  <CalendarDays className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                  Calendarizacion
             </button>
 
-            {ruta.map((etapa) => {
+            <button
+              type="button"
+              onClick={() => setCurrent("dashboard")}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
+                current === "dashboard"
+                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+              }`}
+            >
+                  <TrendingUp className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                  Sintesis
+            </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrent("evidencias")}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
+                    current === "evidencias"
+                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <FileText className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                  Evidencias
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Recorrido metodologico</p>
+                  <p className="text-sm font-semibold text-slate-800">Avanza por las siete etapas del Proposito 1</p>
+                </div>
+                <span className="text-xs font-semibold text-slate-500">
+                  {etapasCompletadas}/{totalEtapas} completadas
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+                {ruta.map((etapa) => {
               const esCurrent = current === flujoDesdeEtapa(etapa);
               return (
                 <EtapaTab
@@ -766,30 +832,9 @@ export default function Home() {
                   onClick={() => irAEtapa(etapa)}
                 />
               );
-            })}
-
-            <button
-              type="button"
-              onClick={() => setCurrent("evidencias")}
-              className={`group flex min-w-[140px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 bg-white ${
-                current === "evidencias"
-                  ? "ux-tab-active border-teal-600 shadow-sm"
-                  : "border-transparent hover:border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              <div className="flex items-center gap-1.5">
-                <FileText className={`h-5 w-5 ${current === "evidencias" ? "text-teal-700" : "text-slate-600"}`} strokeWidth={2.2} aria-hidden="true" />
-                <span className={`text-xs font-semibold ${current === "evidencias" ? "text-teal-700" : "text-slate-700"}`}>
-                  Evidencias
-                </span>
-                <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[9px] font-bold text-violet-600 ring-1 ring-violet-200/50">
-                  Trans.
-                </span>
+                })}
               </div>
-              <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
-                Respaldos por etapa
-              </p>
-            </button>
+            </div>
           </div>
         </div>
       </header>
@@ -800,33 +845,14 @@ export default function Home() {
         </div>
       )}
 
-      <div className="relative z-10 border-b border-slate-100 bg-white/40 px-6 py-4">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 rounded-lg border border-teal-200/50 bg-teal-50 px-4 py-2.5 shadow-sm">
-            <CheckCircle className="h-4 w-4 text-teal-600" aria-hidden="true" />
-            <span className="text-xs font-semibold text-teal-800">
-              <span className="text-sm font-bold">{etapasCompletadas}</span> de {totalEtapas} etapas completadas
-            </span>
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-4 py-2.5 shadow-sm">
-            <FileText className="h-4 w-4 text-slate-600" aria-hidden="true" />
-            <span className="text-xs font-semibold text-slate-700">Evidencias registradas</span>
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border border-violet-200/50 bg-violet-50 px-4 py-2.5 shadow-sm">
-            <Sparkles className="h-4 w-4 text-violet-600" aria-hidden="true" />
-            <span className="text-xs font-semibold text-violet-800">IA Demo activa</span>
-          </div>
-        </div>
-      </div>
-
-      {current !== "catalogo" && current !== "calendarizacion" && (
-      <div className="relative z-10 border-b border-slate-100 bg-white px-6 py-4">
-        <div className="mx-auto grid max-w-7xl gap-3 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+      {current !== "catalogo" && current !== "calendarizacion" && current !== "ejecucion" && current !== "resultados" && current !== "trazabilidad" && (
+      <div className="relative z-10 border-b border-slate-100 bg-white px-6 py-3">
+        <div className="mx-auto grid max-w-7xl gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Motor de ruta</p>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Etapa actual</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="text-sm font-bold text-slate-900">
-                Etapa actual: {etapaActiva?.nombre || "Investigación"}
+                {numeroEtapaActual || 1}. {etapaActiva?.nombre || "Investigación"}
               </span>
               <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
                 etapaActiva?.completada
@@ -841,7 +867,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5">
             <p className="text-xs font-semibold text-slate-500">
               {puedeAvanzar ? "Siguiente etapa sugerida" : "Requisito para avanzar"}
             </p>
@@ -851,22 +877,6 @@ export default function Home() {
                 : puedeAvanzar
                 ? siguienteEtapa?.nombre || "Alcance actual completo"
                 : resumenRuta?.bloqueo_avance || requisitoEtapaActual || "Completa la etapa actual."}
-            </p>
-          </div>
-
-        </div>
-      </div>
-      )}
-
-      {current !== "catalogo" && current !== "calendarizacion" && (
-      <div className="relative z-10 border-b border-slate-100 bg-slate-50/80 px-6 py-3">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Navegación del wizard</p>
-            <p className="mt-0.5 text-sm font-semibold text-slate-800">
-              {current === "evidencias"
-                ? "Evidencias transversales"
-                : `${numeroEtapaActual || 1}. ${etapaActiva?.nombre || "Investigación"}`}
             </p>
           </div>
 
@@ -897,27 +907,62 @@ export default function Home() {
       <section className="relative z-10 ux-reveal">
         {current === "catalogo" && <CatalogoHerramientasProp1 onAbrirHerramienta={abrirHerramienta} />}
         {current === "calendarizacion" && <CalendarizacionProp1 apiUrl={API_URL} proyectoId={PROYECTO_ID} />}
+        {current === "ejecucion" && (
+          <EjecucionPasoAPasoProp1
+            ruta={ruta}
+            resumenRuta={resumenRuta}
+            onAbrirEtapa={irAEtapaNumero}
+            onAbrirCalendarizacion={() => setCurrent("calendarizacion")}
+            onAbrirEvidencias={() => setCurrent("evidencias")}
+            onActualizarRuta={cargarRuta}
+          />
+        )}
+        {current === "dashboard" && (
+          <DashboardAvanceProp1
+            apiUrl={API_URL}
+            proyectoId={PROYECTO_ID}
+            ruta={ruta}
+            resumenRuta={resumenRuta}
+            onAbrirEtapa={irAEtapaNumero}
+            onAbrirEvidencias={() => setCurrent("evidencias")}
+            onAbrirTrazabilidad={() => setCurrent("trazabilidad")}
+            onAbrirResultados={() => setCurrent("resultados")}
+          />
+        )}
+        {current === "resultados" && (
+          <ResultadosActividadProp1
+            apiUrl={API_URL}
+            proyectoId={PROYECTO_ID}
+            ruta={ruta}
+            onAbrirEtapa={irAEtapaNumero}
+            onAbrirEvidencias={() => setCurrent("evidencias")}
+          />
+        )}
+        {current === "trazabilidad" && (
+          <TrazabilidadProcesoProp1
+            apiUrl={API_URL}
+            proyectoId={PROYECTO_ID}
+            ruta={ruta}
+            onAbrirEtapa={irAEtapaNumero}
+            onAbrirEvidencias={() => setCurrent("evidencias")}
+          />
+        )}
         {current === "investigacion" && <InvestigacionFlow onNavigate={navegarFlujo} />}
         {current === "personas" && <PersonasFlow onNavigate={navegarFlujo} />}
         {current === "habilitacion" && <HabilitacionFlow onNavigate={navegarFlujo} />}
         {current === "necesidades" && <NecesidadesFlow onNavigate={navegarFlujo} />}
         {current === "evidencias" && <EvidenciasFlow />}
-
-        {current === "vinculacion" && (
-          <PlaceholderEtapa
-            icono={<Link className="h-10 w-10 text-slate-400" />}
-            titulo="Vinculación"
-            descripcion="Etapa planificada para Hito 3"
-          />
-        )}
-        {current === "medicion" && (
+        {current === "vinculacion" && <VinculacionFlow onNavigate={navegarFlujo} />}
+        {current === "medicion" && <MedicionFlow onNavigate={navegarFlujo} />}
+        {current === "momentos" && <MomentosCriticosFlow onNavigate={navegarFlujo} />}
+        {false && (
           <PlaceholderEtapa
             icono={<BarChart3 className="h-10 w-10 text-slate-400" />}
             titulo="Medición"
             descripcion="Etapa planificada para Hito 3"
           />
         )}
-        {current === "momentos" && (
+        {false && current === "momentos" && (
           <PlaceholderEtapa
             icono={<Target className="h-10 w-10 text-slate-400" />}
             titulo="Momentos críticos"
@@ -1120,18 +1165,18 @@ function EtapaTab({
     <button
       type="button"
       onClick={onClick}
-      className={`group flex min-w-[148px] flex-col border-b-2 px-4 py-3 text-left transition-all duration-150 ${
+      className={`group rounded-lg border px-3 py-3 text-left transition-all duration-150 ${
         activa
-          ? "border-teal-600 bg-white shadow-sm"
+          ? "border-teal-300 bg-white shadow-sm ring-2 ring-teal-100"
           : isLocked
-          ? "border-transparent bg-slate-50/60"
+          ? "border-slate-200 bg-white/70 opacity-70"
           : isReview
-          ? "border-transparent bg-amber-50/40 hover:border-amber-200 hover:bg-amber-50"
-          : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
+          ? "border-amber-200 bg-amber-50/60 hover:bg-amber-50"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
       }`}
     >
       <div className="flex items-center gap-2">
-        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
           activa ? "bg-teal-600 text-white" : estado === "completada" ? "bg-emerald-600 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
         }`}>
           {etapa.numero}
@@ -1142,7 +1187,7 @@ function EtapaTab({
           {icono}
         </span>
         <span
-          className={`text-xs font-semibold transition-colors duration-150 ${
+          className={`min-w-0 flex-1 truncate text-xs font-bold transition-colors duration-150 ${
             activa ? "text-slate-900" : isLocked ? "text-slate-500" : isReview ? "text-amber-800" : "text-slate-700 group-hover:text-slate-900"
           }`}
         >
@@ -1170,7 +1215,6 @@ function EtapaTab({
           {estadoLabel}
         </span>
       </div>
-      <p className="mt-1 line-clamp-1 text-[10px] text-slate-400">{etapa.descripcion}</p>
     </button>
   );
 }

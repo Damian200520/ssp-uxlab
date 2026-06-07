@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Sparkles, FileBox } from "lucide-react";
-import { supabase } from "./supabaseClient";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FileBox, Paperclip, Sparkles, UploadCloud, XCircle } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -24,10 +23,13 @@ const TIPOS_EVIDENCIA = [
   "Documento",
   "Imagen",
   "Video",
+  "Archivo local",
   "Enlace",
   "Nota interna",
   "Resultado de actividad",
 ];
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 type Evidencia = {
   id: string;
@@ -81,11 +83,44 @@ function fechaCorta(fecha?: string | null) {
   }
 }
 
+function formatFileSize(size: number) {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function inferTipoArchivo(file: File) {
+  if (file.type.startsWith("image/")) return "Imagen";
+  if (file.type.startsWith("video/")) return "Video";
+  if (file.type.includes("pdf") || file.type.includes("document") || file.type.includes("sheet")) {
+    return "Documento";
+  }
+
+  return "Archivo local";
+}
+
+function archivoABase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function urlEvidencia(url?: string | null) {
+  if (!url) return "";
+  if (url.startsWith("/uploads/")) return `${API_URL}${url}`;
+  return url;
+}
+
 export default function EvidenciasFlow() {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [filtroEtapa, setFiltroEtapa] = useState<number | "todas">("todas");
@@ -146,15 +181,12 @@ export default function EvidenciasFlow() {
     setMessage("");
 
     try {
-      const { data, error } = await supabase
-        .from("evidencia")
-        .select("*")
-        .eq("proyecto_id", PROYECTO_ID)
-        .order("created_at", { ascending: false });
+      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/evidencias`);
 
-      if (error) throw new Error(error.message);
+      if (!res.ok) throw new Error(await res.text());
 
-      setEvidencias((data || []) as Evidencia[]);
+      const json = await res.json();
+      setEvidencias((json.evidencias || []) as Evidencia[]);
     } catch (error) {
       console.error("Error al cargar evidencias:", error);
       setMessage("No se pudieron cargar las evidencias del proyecto.");
@@ -170,6 +202,29 @@ export default function EvidenciasFlow() {
   function resetForm() {
     setForm(initialForm);
     setEditingId(null);
+    setSelectedFile(null);
+    setIsDragging(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function seleccionarArchivo(file: File) {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setMessage("El archivo supera el limite de 10 MB permitido.");
+      return;
+    }
+
+    setSelectedFile(file);
+    setMessage("");
+    setForm((prev) => ({
+      ...prev,
+      nombre_archivo: prev.nombre_archivo.trim() ? prev.nombre_archivo : file.name,
+      tipo_archivo: inferTipoArchivo(file),
+    }));
+  }
+
+  function limpiarArchivoSeleccionado() {
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function validarFormulario() {
@@ -183,7 +238,7 @@ export default function EvidenciasFlow() {
       return false;
     }
 
-    if (!form.descripcion.trim() && !form.url_storage.trim()) {
+    if (!form.descripcion.trim() && !form.url_storage.trim() && !selectedFile) {
       setMessage("Agrega una descripción o un enlace para respaldar la evidencia.");
       return false;
     }
@@ -197,31 +252,50 @@ export default function EvidenciasFlow() {
     setLoading(true);
     setMessage("");
 
-    const payload = {
+    const payloadBase = {
       proyecto_id: PROYECTO_ID,
       calendarizacion_id: null,
       etapa: form.etapa,
       nombre_archivo: form.nombre_archivo.trim(),
       tipo_archivo: form.tipo_archivo,
-      url_storage: form.url_storage.trim() || null,
       descripcion: form.descripcion.trim() || null,
       responsable: form.responsable.trim() || null,
-      updated_at: new Date().toISOString(),
     };
 
     try {
-      if (editingId) {
-        const { error } = await supabase
-          .from("evidencia")
-          .update(payload)
-          .eq("id", editingId);
+      const payload = selectedFile
+        ? {
+            ...payloadBase,
+            url_storage: null,
+            nombre_original: selectedFile.name,
+            mime_type: selectedFile.type || "application/octet-stream",
+            contenido_base64: await archivoABase64(selectedFile),
+          }
+        : {
+            ...payloadBase,
+            url_storage: form.url_storage.trim() || null,
+          };
 
-        if (error) throw new Error(error.message);
+      const res = await fetch(
+        selectedFile
+          ? editingId
+            ? `${API_URL}/evidencias/${editingId}/archivo`
+            : `${API_URL}/evidencias/archivo`
+          : editingId
+            ? `${API_URL}/evidencias/${editingId}`
+            : `${API_URL}/evidencias`,
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) throw new Error(await res.text());
+
+      if (editingId) {
         setMessage("Evidencia actualizada correctamente.");
       } else {
-        const { error } = await supabase.from("evidencia").insert(payload);
-
-        if (error) throw new Error(error.message);
         setMessage("Evidencia guardada correctamente.");
       }
 
@@ -238,6 +312,8 @@ export default function EvidenciasFlow() {
   function editarEvidencia(item: Evidencia) {
     setEditingId(item.id);
     setSelectedId(item.id);
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setForm({
       etapa: item.etapa,
       nombre_archivo: item.nombre_archivo || "",
@@ -258,9 +334,11 @@ export default function EvidenciasFlow() {
     setMessage("");
 
     try {
-      const { error } = await supabase.from("evidencia").delete().eq("id", id);
+      const res = await fetch(`${API_URL}/evidencias/${id}`, {
+        method: "DELETE",
+      });
 
-      if (error) throw new Error(error.message);
+      if (!res.ok) throw new Error(await res.text());
 
       if (selectedId === id) setSelectedId(null);
       setMessage("Evidencia eliminada correctamente.");
@@ -392,6 +470,76 @@ export default function EvidenciasFlow() {
                 <p className="mt-1 text-xs text-slate-500">
                   Puede ser un enlace a Drive, Figma, Miro, video, documento o repositorio.
                 </p>
+              </div>
+
+              <div className="md:col-span-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) seleccionarArchivo(file);
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={(event) => {
+                    event.preventDefault();
+                    setIsDragging(false);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsDragging(false);
+                    const file = event.dataTransfer.files?.[0];
+                    if (file) seleccionarArchivo(file);
+                  }}
+                  className={`flex w-full flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition-all duration-200 ${
+                    isDragging
+                      ? "border-teal-400 bg-teal-50 text-teal-800 shadow-md shadow-teal-100/60"
+                      : "border-slate-300 bg-slate-50 text-slate-600 hover:border-teal-300 hover:bg-teal-50/60"
+                  }`}
+                >
+                  <UploadCloud className="h-9 w-9" aria-hidden="true" />
+                  <span className="mt-3 text-sm font-bold text-slate-800">
+                    Arrastra un archivo aqui o haz clic para seleccionarlo
+                  </span>
+                  <span className="mt-1 text-xs leading-5 text-slate-500">
+                    PDF, imagenes, planillas, documentos u otros respaldos. Maximo 10 MB.
+                  </span>
+                </button>
+
+                {selectedFile && (
+                  <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <Paperclip className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <div>
+                        <p className="font-bold">{selectedFile.name}</p>
+                        <p className="text-xs text-teal-700">
+                          {selectedFile.type || "Tipo no informado"} · {formatFileSize(selectedFile.size)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={limpiarArchivoSeleccionado}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-white px-3 py-2 text-xs font-bold text-teal-700 transition hover:border-teal-300"
+                    >
+                      <XCircle className="h-4 w-4" aria-hidden="true" />
+                      Quitar archivo
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -532,7 +680,7 @@ export default function EvidenciasFlow() {
 
                     {item.url_storage && (
                       <a
-                        href={item.url_storage}
+                        href={urlEvidencia(item.url_storage)}
                         target="_blank"
                         rel="noreferrer"
                         className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
@@ -625,7 +773,7 @@ export default function EvidenciasFlow() {
 
                 {selected.url_storage && (
                   <a
-                    href={selected.url_storage}
+                    href={urlEvidencia(selected.url_storage)}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-5 inline-flex rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"

@@ -90,7 +90,7 @@ export const herramientasProp1: HerramientaProp1[] = [
     descripcion:
       "Relaciona cada necesidad con la actividad del propósito que la aborda, generando trazabilidad.",
     viabilidadMvp: "Alta",
-    estado: "En desarrollo",
+    estado: "Disponible",
     flujo: "vinculacion",
   },
   {
@@ -101,7 +101,7 @@ export const herramientasProp1: HerramientaProp1[] = [
     descripcion:
       "Vista de agenda donde el funcionario programa cuándo ejecutará cada actividad del propósito.",
     viabilidadMvp: "Alta",
-    estado: "En desarrollo",
+    estado: "Disponible",
     flujo: "calendarizacion",
   },
   {
@@ -117,13 +117,13 @@ export const herramientasProp1: HerramientaProp1[] = [
   },
   {
     id: "dashboard-resultados",
-    nombre: "Dashboard de resultados del Propósito 1",
+    nombre: "Sintesis de resultados del Proposito 1",
     tipo: "Visualización de datos",
     etapa: "Resultados",
     descripcion:
-      "Vista consolidada con el avance del recorrido, actividades completadas, indicadores y resultados.",
+      "Vista consolidada de resultados metodologicos por etapa, evidencias asociadas e indicadores del recorrido.",
     viabilidadMvp: "Alta",
-    estado: "En desarrollo",
+    estado: "Disponible",
     flujo: "resultados",
   },
 ];

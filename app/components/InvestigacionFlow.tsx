@@ -651,10 +651,6 @@ export default function InvestigacionFlow({
                     ["Definir Personas", "personas", false],
                     ["Habilitación y Expectativas", "habilitacion", false],
                     ["Definir Necesidades", "necesidades", false],
-                    ["Idear", "idear", false],
-                    ["Prototipar", "prototipar", false],
-                    ["Evaluar", "evaluar", false],
-                    ["Implementar", "implementar", false],
                 ] as [string, string | null, boolean][]
             ).map(([label, route, active]) => (
                 <button
@@ -898,17 +894,17 @@ export default function InvestigacionFlow({
                 <aside className="space-y-5">
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
                     <h3 className="font-bold text-slate-800">
-                      Lista de verificación de cambios implementados
+                      Criterios de revision del plan
                     </h3>
 
                     <ul className="mt-4 space-y-3 text-sm text-slate-700">
                       {[
-                        "Hallazgos y descriptores incorporados",
+                        "Contexto y servicio descritos con claridad",
                         "Personas usuarias por relación/perfiles",
                         "Campo múltiple para motivaciones y barreras",
-                        "Objetivo reubicado correctamente",
+                        "Preguntas guia conectadas al objetivo",
                         "Técnicas y preparativos separados",
-                        "Acciones guardar / editar / eliminar",
+                        "Plan listo para revision del equipo",
                       ].map((item) => (
                         <li key={item} className="flex gap-3">
                           <span className="font-bold text-teal-700">✓</span>
@@ -1148,16 +1144,16 @@ export default function InvestigacionFlow({
 
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
                     <h3 className="font-bold text-slate-800">
-                      Lista de verificación de cambios implementados
+                      Revision del resultado
                     </h3>
 
                     <ul className="mt-4 space-y-3 text-sm text-slate-700">
                       {[
-                        "Listado de registros cargados",
-                        "Acciones ver / editar / eliminar",
+                        "Plan de investigacion disponible",
+                        "Objetivo y alcance revisables",
                         "Revisión y validación del plan",
-                        "Resumen de la información ingresada",
-                        "Diseño pensado para vista adaptable",
+                        "Metodos y participantes identificados",
+                        "Resultado preparado para validacion",
                       ].map((item) => (
                         <li key={item} className="flex gap-3">
                           <span className="font-bold text-teal-700">✓</span>
@@ -1371,16 +1367,16 @@ export default function InvestigacionFlow({
 
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-100/50">
                     <h3 className="font-bold text-slate-800">
-                      Lista de verificación de cambios implementados
+                      Resultado metodologico
                     </h3>
 
                     <ul className="mt-4 space-y-3 text-sm text-slate-700">
                       {[
                         "Visualización en lienzo del resultado",
                         "Posibilidad de revisar y validar",
-                        "Edición posterior del plan",
+                        "Participantes y metodos trazables",
                         "Resumen visual de datos cargados",
-                        "Acciones rápidas disponibles",
+                        "Preparativos y logistica revisables",
                         "Enfoque alineado con la guía UXLab",
                       ].map((item) => (
                         <li key={item} className="flex gap-3">
