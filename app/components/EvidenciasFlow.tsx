@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { FileBox, Paperclip, Sparkles, UploadCloud, XCircle } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -176,7 +176,7 @@ export default function EvidenciasFlow() {
     return evidencias.find((item) => item.id === selectedId) || evidencias[0] || null;
   }, [evidencias, selectedId]);
 
-  async function cargarEvidencias() {
+  const cargarEvidencias = useCallback(async () => {
     setLoading(true);
     setMessage("");
 
@@ -193,11 +193,11 @@ export default function EvidenciasFlow() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     cargarEvidencias();
-  }, []);
+  }, [cargarEvidencias]);
 
   function resetForm() {
     setForm(initialForm);
@@ -265,16 +265,16 @@ export default function EvidenciasFlow() {
     try {
       const payload = selectedFile
         ? {
-            ...payloadBase,
-            url_storage: null,
-            nombre_original: selectedFile.name,
-            mime_type: selectedFile.type || "application/octet-stream",
-            contenido_base64: await archivoABase64(selectedFile),
-          }
+          ...payloadBase,
+          url_storage: null,
+          nombre_original: selectedFile.name,
+          mime_type: selectedFile.type || "application/octet-stream",
+          contenido_base64: await archivoABase64(selectedFile),
+        }
         : {
-            ...payloadBase,
-            url_storage: form.url_storage.trim() || null,
-          };
+          ...payloadBase,
+          url_storage: form.url_storage.trim() || null,
+        };
 
       const res = await fetch(
         selectedFile
@@ -504,11 +504,10 @@ export default function EvidenciasFlow() {
                     const file = event.dataTransfer.files?.[0];
                     if (file) seleccionarArchivo(file);
                   }}
-                  className={`flex w-full flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition-all duration-200 ${
-                    isDragging
-                      ? "border-teal-400 bg-teal-50 text-teal-800 shadow-md shadow-teal-100/60"
-                      : "border-slate-300 bg-slate-50 text-slate-600 hover:border-teal-300 hover:bg-teal-50/60"
-                  }`}
+                  className={`flex w-full flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition-all duration-200 ${isDragging
+                    ? "border-teal-400 bg-teal-50 text-teal-800 shadow-md shadow-teal-100/60"
+                    : "border-slate-300 bg-slate-50 text-slate-600 hover:border-teal-300 hover:bg-teal-50/60"
+                    }`}
                 >
                   <UploadCloud className="h-9 w-9" aria-hidden="true" />
                   <span className="mt-3 text-sm font-bold text-slate-800">
@@ -627,11 +626,10 @@ export default function EvidenciasFlow() {
               {evidenciasFiltradas.map((item) => (
                 <article
                   key={item.id}
-                  className={`rounded-2xl border p-4 transition-all duration-200 ${
-                    selected?.id === item.id
-                      ? "border-teal-400/60 bg-gradient-to-r from-teal-50/60 to-emerald-50/60 shadow-md shadow-teal-100/30"
-                      : "border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-md hover:shadow-slate-100/50"
-                  }`}
+                  className={`rounded-2xl border p-4 transition-all duration-200 ${selected?.id === item.id
+                    ? "border-teal-400/60 bg-gradient-to-r from-teal-50/60 to-emerald-50/60 shadow-md shadow-teal-100/30"
+                    : "border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-md hover:shadow-slate-100/50"
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
