@@ -807,6 +807,19 @@ export default function Home() {
                   <FileText className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
                   Evidencias
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrent("resultados")}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
+                    current === "resultados"
+                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <CheckCircle className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                  Resultados
+                </button>
               </div>
             </div>
 

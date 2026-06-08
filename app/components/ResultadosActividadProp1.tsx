@@ -66,6 +66,11 @@ type ResultadosResponse = {
 
 type EstadoResultado = "validado" | "con_registros" | "pendiente";
 
+type AccionPendiente = {
+  texto: string;
+  accion: "etapa" | "evidencias" | "validar";
+};
+
 type ResultadoEtapa = {
   numero: number;
   clave: string;
@@ -77,7 +82,7 @@ type ResultadoEtapa = {
   registros: number;
   evidencias: number;
   actividades: number;
-  accionesPendientes: string[];
+  accionesPendientes: AccionPendiente[];
 };
 
 type Props = {
@@ -227,12 +232,12 @@ function registrosPorEtapa(etapa: number, data: ResultadosResponse | null) {
   return etapas.momentos_criticos?.length || 0;
 }
 
-function pendientesEtapa(resultado: ResultadoEtapa) {
-  const pendientes: string[] = [];
+function pendientesEtapa(resultado: ResultadoEtapa): AccionPendiente[] {
+  const pendientes: AccionPendiente[] = [];
 
-  if (resultado.registros === 0) pendientes.push("Registrar informacion metodologica de la etapa.");
-  if (resultado.evidencias === 0) pendientes.push("Agregar al menos una evidencia asociada.");
-  if (resultado.estado !== "validado") pendientes.push("Validar el resultado antes del cierre del recorrido.");
+  if (resultado.registros === 0) pendientes.push({ texto: "Registrar informacion metodologica de la etapa.", accion: "etapa" });
+  if (resultado.evidencias === 0) pendientes.push({ texto: "Agregar al menos una evidencia asociada.", accion: "evidencias" });
+  if (resultado.estado !== "validado") pendientes.push({ texto: "Validar el resultado antes del cierre del recorrido.", accion: "validar" });
 
   return pendientes;
 }
@@ -318,7 +323,7 @@ export default function ResultadosActividadProp1({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">
-                Actividad 83
+                Síntesis Propósito 1
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
                 Resultados por etapa
@@ -388,14 +393,27 @@ export default function ResultadosActividadProp1({
           )}
 
           {!loading && resultadosFiltrados.length > 0 && (
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              {resultadosFiltrados.map((resultado) => (
-                <article
-                  key={resultado.numero}
-                  className={`rounded-lg border p-4 transition hover:border-teal-200 hover:shadow-sm ${
-                    detalle?.numero === resultado.numero ? "border-teal-200 bg-teal-50/40" : "border-slate-200 bg-white"
-                  }`}
-                >
+            <div className="mt-8 flex flex-col gap-6 relative">
+              {resultadosFiltrados.map((resultado, index) => (
+                <div key={resultado.numero} className="flex gap-4 lg:gap-6 relative">
+                  {/* Columna izquierda: Stepper visual */}
+                  <div className="relative flex flex-col items-center">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-white shadow-sm font-bold z-10 ${
+                      detalle?.numero === resultado.numero ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-500"
+                    }`}>
+                      {resultado.numero}
+                    </div>
+                    {index !== resultadosFiltrados.length - 1 && (
+                      <div className="absolute top-10 w-[2px] bg-slate-200 h-[calc(100%+1.5rem)]" />
+                    )}
+                  </div>
+                  
+                  {/* Columna derecha: Tarjeta de la etapa */}
+                  <article
+                    className={`flex-1 rounded-lg border p-4 transition hover:border-teal-200 hover:shadow-sm ${
+                      detalle?.numero === resultado.numero ? "border-teal-200 bg-teal-50/40" : "border-slate-200 bg-white"
+                    }`}
+                  >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
@@ -418,9 +436,8 @@ export default function ResultadosActividadProp1({
                   </p>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{resultado.sintesis}</p>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-center">
                     <MiniStat label="Registros" value={resultado.registros} />
-                    <MiniStat label="Actividades" value={resultado.actividades} />
                     <MiniStat label="Evidencias" value={resultado.evidencias} />
                   </div>
 
@@ -442,8 +459,9 @@ export default function ResultadosActividadProp1({
                     </button>
                   </div>
                 </article>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           )}
         </section>
 
@@ -500,34 +518,45 @@ export default function ResultadosActividadProp1({
                     Esta etapa cuenta con registros, evidencias y validacion de avance.
                   </div>
                 ) : (
-                  detalle.accionesPendientes.map((pendiente) => (
+                  detalle.accionesPendientes.map((pendiente, idx) => (
                     <div
-                      key={pendiente}
-                      className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-sm leading-6 text-amber-800"
+                      key={idx}
+                      className="rounded-lg border border-amber-100 bg-amber-50 p-4"
                     >
-                      {pendiente}
+                      <p className="text-sm leading-6 text-amber-800 font-medium mb-3">{pendiente.texto}</p>
+                      {pendiente.accion === "etapa" && (
+                        <button
+                          type="button"
+                          onClick={() => onAbrirEtapa(detalle.numero)}
+                          className="ux-button-primary inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold w-full"
+                        >
+                          Ir a llenar registros
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {pendiente.accion === "evidencias" && (
+                        <button
+                          type="button"
+                          onClick={onAbrirEvidencias}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-100 transition w-full"
+                        >
+                          Subir evidencia
+                          <FileText className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {pendiente.accion === "validar" && (
+                        <button
+                          type="button"
+                          onClick={() => onAbrirEtapa(detalle.numero)}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-100 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-200 transition w-full"
+                        >
+                          Ir a validar la etapa
+                          <CheckCircle className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))
                 )}
-              </div>
-
-              <div className="mt-5 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => onAbrirEtapa(detalle.numero)}
-                  className="ux-button-primary inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold"
-                >
-                  Abrir etapa
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={onAbrirEvidencias}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                >
-                  Ver evidencias
-                  <FileText className="h-4 w-4" />
-                </button>
               </div>
             </aside>
           </section>

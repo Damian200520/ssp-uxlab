@@ -691,6 +691,9 @@ window.dispatchEvent(
                 ["Definir Personas", "personas", false],
                 ["Habilitación y Expectativas", "habilitacion", true],
                 ["Definir Necesidades", "necesidades", false],
+                ["Vinculación", "vinculacion", false],
+                ["Medición", "medicion", false],
+                ["Momentos Críticos", "momentos", false],
               ] as [string, string | null, boolean][]
             ).map(([label, route, active]) => (
               <button

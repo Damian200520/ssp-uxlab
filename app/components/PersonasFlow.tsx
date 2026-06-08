@@ -48,6 +48,7 @@ interface Toast {
     id: number;
     type: "success" | "error" | "info";
     message: string;
+    action?: { label: string; onClick: () => void };
 }
 
 
@@ -155,6 +156,14 @@ function ToastList({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: numbe
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-black/10 ${colors[t.type]}`}
                 >
                     <span>{t.message}</span>
+                    {t.action && (
+                        <button
+                            onClick={t.action.onClick}
+                            className="ml-2 rounded border border-white/40 bg-white/20 px-3 py-1.5 text-xs font-bold shadow-sm transition-all hover:bg-white/30 hover:scale-[1.02]"
+                        >
+                            {t.action.label}
+                        </button>
+                    )}
                     <button onClick={() => onRemove(t.id)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity" aria-label="Cerrar notificación"><X className="h-4 w-4" /></button>
                 </div>
             ))}
@@ -211,14 +220,14 @@ export default function PersonasFlow({
     const [erroresForm, setErroresForm] = useState<Partial<Record<keyof FormState, string>>>({});
 
 
-    const addToast = useCallback((message: string, type: Toast["type"] = "success") => {
+    const addToast = useCallback((message: string, type: Toast["type"] = "success", action?: Toast["action"]) => {
         const id = Date.now() + Math.floor(Math.random() * 1000);
 
-        setToasts((prev) => [...prev, { id, type, message }]);
+        setToasts((prev) => [...prev, { id, type, message, action }]);
 
         setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== id));
-        }, 4000);
+        }, action ? 6000 : 4000);
     }, []);
 
     const removeToast = (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -293,7 +302,35 @@ export default function PersonasFlow({
     }
 
     async function guardarPerfil() {
-        if (!validarForm()) return;
+        const errores: typeof erroresForm = {};
+        if (!form.nombre.trim()) errores.nombre = "El nombre es obligatorio.";
+        if (!form.acceso.trim()) errores.acceso = "La descripción es obligatoria.";
+        
+        if (Object.keys(errores).length > 0) {
+            setErroresForm(errores);
+            
+            if (errores.nombre) {
+                addToast("No puedes cerrar aún, falta completar el nombre.", "error", { 
+                    label: "Ir a completar Nombre", 
+                    onClick: () => { 
+                        document.querySelector('input[placeholder="Ej: Adulto Mayor Digitalizado"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                        setTimeout(() => (document.querySelector('input[placeholder="Ej: Adulto Mayor Digitalizado"]') as HTMLInputElement)?.focus(), 300);
+                    } 
+                });
+                return;
+            }
+            if (errores.acceso) {
+                addToast("No puedes cerrar aún, falta la descripción de acceso.", "error", { 
+                    label: "Ir a descripción", 
+                    onClick: () => { 
+                        document.querySelector('textarea[placeholder="Describe las características principales..."]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                        setTimeout(() => (document.querySelector('textarea[placeholder="Describe las características principales..."]') as HTMLTextAreaElement)?.focus(), 300);
+                    } 
+                });
+                return;
+            }
+            return;
+        }
 
         setLoading(true);
 
@@ -413,6 +450,9 @@ async function validarPerfil(id: string) {
                                 ["Definir Personas", "personas", true],
                                 ["Habilitación y Expectativas", "habilitacion", false],
                                 ["Definir Necesidades", "necesidades", false],
+                                ["Vinculación", "vinculacion", false],
+                                ["Medición", "medicion", false],
+                                ["Momentos Críticos", "momentos", false],
                             ] as [string, string | null, boolean][]
                         ).map(([label, route, active]) => (
                             <button

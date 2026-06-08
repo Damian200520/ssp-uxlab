@@ -651,6 +651,9 @@ export default function InvestigacionFlow({
                     ["Definir Personas", "personas", false],
                     ["Habilitación y Expectativas", "habilitacion", false],
                     ["Definir Necesidades", "necesidades", false],
+                    ["Vinculación", "vinculacion", false],
+                    ["Medición", "medicion", false],
+                    ["Momentos Críticos", "momentos", false],
                 ] as [string, string | null, boolean][]
             ).map(([label, route, active]) => (
                 <button

@@ -450,7 +450,36 @@ export default function MomentosCriticosFlow({
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
       <ToastList toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
 
-      <section className="px-6 py-8 ux-reveal">
+      <div className="flex">
+        <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+            <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
+            <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
+                {(
+                    [
+                        ["← Volver al Catálogo", null, false],
+                        ["Investigar", "investigacion", false],
+                        ["Definir Personas", "personas", false],
+                        ["Habilitación y Expectativas", "habilitacion", false],
+                        ["Definir Necesidades", "necesidades", false],
+                        ["Vinculación", "vinculacion", false],
+                        ["Medición", "medicion", false],
+                        ["Momentos Críticos", "momentos", true],
+                    ] as [string, string | null, boolean][]
+                ).map(([label, route, active]) => (
+                    <button
+                        key={label}
+                        onClick={() => onNavigate && onNavigate(route)}
+                        className={`w-full text-left rounded-xl px-3 py-3 transition-all duration-150 ${
+                            active ? "bg-gradient-to-r from-teal-50 to-emerald-50 font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+                        }`}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </nav>
+        </aside>
+
+        <section className="px-6 py-8 ux-reveal w-full">
         <div className="mx-auto max-w-7xl space-y-6">
           <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -570,7 +599,8 @@ export default function MomentosCriticosFlow({
             </>
           )}
         </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }
