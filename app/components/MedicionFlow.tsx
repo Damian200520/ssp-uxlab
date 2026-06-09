@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import SidebarMetodologico from "./SidebarMetodologico";
+import RecursosComplementarios from "./RecursosComplementarios";
 import {
   ArrowRight,
   BarChart3,
@@ -446,34 +448,7 @@ export default function MedicionFlow({
       <ToastList toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
 
       <div className="flex">
-        <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
-            <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
-            <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
-                {(
-                    [
-                        ["← Volver al Catálogo", null, false],
-                        ["Investigar", "investigacion", false],
-                        ["Definir Personas", "personas", false],
-                        ["Habilitación y Expectativas", "habilitacion", false],
-                        ["Definir Necesidades", "necesidades", false],
-                        ["Vinculación", "vinculacion", false],
-                        ["Medición", "medicion", true],
-                        ["Momentos Críticos", "momentos", false],
-                    ] as [string, string | null, boolean][]
-                ).map(([label, route, active]) => (
-                    <button
-                        key={label}
-                        onClick={() => onNavigate && onNavigate(route)}
-                        className={`w-full text-left rounded-xl px-3 py-3 transition-all duration-150 ${
-                            active ? "bg-gradient-to-r from-teal-50 to-emerald-50 font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-                        }`}
-                    >
-                        {label}
-                    </button>
-                ))}
-            </nav>
-        </aside>
-
+        <SidebarMetodologico activeRoute="medicion" onNavigate={(r) => onNavigate?.(r)} />
         <section className="px-6 py-8 ux-reveal w-full">
         <div className="mx-auto max-w-7xl space-y-6">
           <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -639,36 +614,49 @@ function FormularioMedicion({
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
-      <aside className="ux-card rounded-lg p-5">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-          Vinculaciones previas
-        </p>
-        <h3 className="mt-1 text-lg font-bold text-slate-950">
-          Selecciona un servicio a medir
-        </h3>
-        <div className="mt-4 max-h-[580px] space-y-3 overflow-y-auto pr-1">
-          {vinculaciones.map((vinculacion) => {
-            const active = vinculacion.id === form.vinculacionId;
-            return (
-              <button
-                key={vinculacion.id}
-                type="button"
-                onClick={() => onChange("vinculacionId", vinculacion.id)}
-                className={`w-full rounded-lg border p-4 text-left transition-all duration-150 ${
-                  active
-                    ? "border-indigo-200 bg-indigo-50 shadow-sm"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                }`}
-              >
-                <p className="text-sm font-bold leading-snug text-slate-900">
-                  {vinculacion.actividad_servicio}
-                </p>
-                <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">
-                  {vinculacion.alerta_ia || "Sin oportunidad registrada."}
-                </p>
-              </button>
-            );
-          })}
+      <aside className="space-y-5">
+        <div className="ux-card rounded-lg p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+            Vinculaciones previas
+          </p>
+          <h3 className="mt-1 text-lg font-bold text-slate-950">
+            Selecciona un servicio a medir
+          </h3>
+          <div className="mt-4 max-h-[580px] space-y-3 overflow-y-auto pr-1">
+            {vinculaciones.map((vinculacion) => {
+              const active = vinculacion.id === form.vinculacionId;
+              return (
+                <button
+                  key={vinculacion.id}
+                  type="button"
+                  onClick={() => onChange("vinculacionId", vinculacion.id)}
+                  className={`w-full rounded-lg border p-4 text-left transition-all duration-150 ${
+                    active
+                      ? "border-indigo-200 bg-indigo-50 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <p className="text-sm font-bold leading-snug text-slate-900">
+                    {vinculacion.actividad_servicio}
+                  </p>
+                  <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">
+                    {vinculacion.alerta_ia || "Sin oportunidad registrada."}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-sm">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+              Recursos complementarios
+            </p>
+          </div>
+          <RecursosComplementarios actividad="medicion" />
         </div>
       </aside>
 

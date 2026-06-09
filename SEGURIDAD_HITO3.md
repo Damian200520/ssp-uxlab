@@ -78,6 +78,3 @@ Para una activacion productiva futura se propone:
 - Captura del frontend consumiendo datos por FastAPI.
 - Captura de endpoints FastAPI del Proposito 1 respondiendo correctamente.
 
-## Frase Sugerida Para Presentacion
-
-> La auditoria muestra que RLS esta habilitado en tablas principales, pero varias politicas siguen abiertas para `anon` y `authenticated` con condiciones `true`. Como mitigacion del Hito 3, el frontend del Proposito 1 fue integrado con FastAPI para evitar operaciones directas desde componentes React hacia Supabase. El endurecimiento productivo de RLS queda condicionado a Supabase Auth, membresia por proyecto y validacion de permisos por `proyecto_id`.

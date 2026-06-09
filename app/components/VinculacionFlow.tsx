@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import SidebarMetodologico from "./SidebarMetodologico";
+import RecursosComplementarios from "./RecursosComplementarios";
 import {
   ArrowRight,
   Bot,
@@ -27,7 +29,7 @@ const PROYECTO_ID =
 const TOAST_DURATION_MS = 4200;
 const VINCULACION_META_PREFIX = "::uxlab-vinculacion-meta::";
 
-type TabVinculacion = "formulario" | "registros" | "lienzo";
+type TabVinculacion = "formulario" | "registros" | "lienzo" | "recursos";
 type ToastType = "success" | "error" | "info";
 type DiagnosticoVinculo =
   | "Coincidencia"
@@ -511,34 +513,7 @@ export default function VinculacionFlow({
       <ToastList toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
 
       <div className="flex">
-        <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
-            <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
-            <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
-                {(
-                    [
-                        ["← Volver al Catálogo", null, false],
-                        ["Investigar", "investigacion", false],
-                        ["Definir Personas", "personas", false],
-                        ["Habilitación y Expectativas", "habilitacion", false],
-                        ["Definir Necesidades", "necesidades", false],
-                        ["Vinculación", "vinculacion", true],
-                        ["Medición", "medicion", false],
-                        ["Momentos Críticos", "momentos", false],
-                    ] as [string, string | null, boolean][]
-                ).map(([label, route, active]) => (
-                    <button
-                        key={label}
-                        onClick={() => onNavigate && onNavigate(route)}
-                        className={`w-full text-left rounded-xl px-3 py-3 transition-all duration-150 ${
-                            active ? "bg-gradient-to-r from-teal-50 to-emerald-50 font-semibold text-teal-700 shadow-sm ring-1 ring-teal-100/50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-                        }`}
-                    >
-                        {label}
-                    </button>
-                ))}
-            </nav>
-        </aside>
-
+        <SidebarMetodologico activeRoute="vinculacion" onNavigate={(r) => onNavigate?.(r)} />
         <section className="px-6 py-8 ux-reveal w-full">
         <div className="mx-auto max-w-7xl space-y-6">
           <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -656,6 +631,7 @@ export default function VinculacionFlow({
               )}
             </>
           )}
+
         </div>
         </section>
       </div>
@@ -763,6 +739,18 @@ function FormularioVinculacion({
           })}
         </div>
         {errores.necesidadId && <ErrorText>{errores.necesidadId}</ErrorText>}
+
+        <div className="mt-5 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/50">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-sm">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+              Recursos complementarios
+            </p>
+          </div>
+          <RecursosComplementarios actividad="vinculacion" />
+        </div>
       </aside>
 
       <section className="ux-card rounded-lg p-5">
