@@ -352,7 +352,7 @@ export default function EvidenciasFlow() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50 px-6 py-8">
+    <div className="min-h-0 bg-gradient-to-b from-slate-50 to-slate-100/50 px-6 py-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

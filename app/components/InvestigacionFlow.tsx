@@ -639,9 +639,9 @@ export default function InvestigacionFlow({
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
+    <main className="min-h-0 bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
       <div className="flex">
-        <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+        <aside className="hidden min-h-0 w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
           <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
 
           <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">

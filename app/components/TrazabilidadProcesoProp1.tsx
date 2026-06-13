@@ -262,7 +262,7 @@ export default function TrazabilidadProcesoProp1({
   const etapasAuditables = hitos.filter((item) => item.registros > 0 && item.evidencias > 0).length;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8">
+    <main className="min-h-0 bg-slate-50 px-6 py-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

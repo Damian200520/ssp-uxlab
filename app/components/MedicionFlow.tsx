@@ -444,7 +444,7 @@ export default function MedicionFlow({
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
+    <main className="min-h-0 bg-gradient-to-b from-slate-50 to-white text-slate-900">
       <ToastList toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
 
       <div className="flex">

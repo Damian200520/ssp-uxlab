@@ -18,7 +18,7 @@ const RUTAS: [string, string | null][] = [
 
 export default function SidebarMetodologico({ activeRoute, onNavigate }: Props) {
   return (
-    <aside className="hidden min-h-screen w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+    <aside className="hidden min-h-0 w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
       <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">
         SSP·UXLab
       </div>

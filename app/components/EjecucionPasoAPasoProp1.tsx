@@ -116,7 +116,7 @@ export default function EjecucionPasoAPasoProp1({
   const progreso = resumenRuta?.porcentaje_completitud ?? Math.round((totalCompletadas / totalEtapas) * 100);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-6 py-8 text-slate-900">
+    <main className="min-h-0 bg-gradient-to-b from-slate-50 to-white px-6 py-8 text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-md shadow-slate-100/70">
           <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">

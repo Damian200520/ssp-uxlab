@@ -689,7 +689,6 @@ export default function Home() {
     : etapaActiva?.estado_ruta === "incompleta"
     ? "Requiere revisión"
     : "En desarrollo";
-
   return (
     <main className="ux-shell">
       <div className="pointer-events-none fixed inset-0 z-0 bg-dots-subtle opacity-30" />
@@ -748,108 +747,6 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 bg-white px-6 py-4">
-          <div className="mx-auto max-w-7xl space-y-4">
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Herramientas</p>
-                <p className="text-sm font-semibold text-slate-800">Accesos de apoyo para gestionar el recorrido</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setCurrent("catalogo")}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
-                current === "catalogo"
-                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-              }`}
-            >
-                  <Clipboard className="h-4 w-4" strokeWidth={2.2} />
-                  Catalogo
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrent("calendarizacion")}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
-                current === "calendarizacion"
-                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-              }`}
-            >
-                  <CalendarDays className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
-                  Calendarizacion
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrent("dashboard")}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
-                current === "dashboard"
-                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-              }`}
-            >
-                  <TrendingUp className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
-                  Sintesis
-            </button>
-
-                <button
-                  type="button"
-                  onClick={() => setCurrent("evidencias")}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
-                    current === "evidencias"
-                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  <FileText className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
-                  Evidencias
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setCurrent("resultados")}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-150 ${
-                    current === "resultados"
-                      ? "border-teal-200 bg-teal-50 text-teal-700 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  <CheckCircle className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
-                  Resultados
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Recorrido metodologico</p>
-                  <p className="text-sm font-semibold text-slate-800">Avanza por las siete etapas del Proposito 1</p>
-                </div>
-                <span className="text-xs font-semibold text-slate-500">
-                  {etapasCompletadas}/{totalEtapas} completadas
-                </span>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-                {ruta.map((etapa) => {
-              const esCurrent = current === flujoDesdeEtapa(etapa);
-              return (
-                <EtapaTab
-                  key={`${etapa.numero}-${etapa.clave}`}
-                  etapa={etapa}
-                  activa={esCurrent}
-                  icono={etapaIcono[etapa.clave] ?? <Circle className="h-5 w-5" />}
-                  onClick={() => irAEtapa(etapa)}
-                />
-              );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
       </header>
 
       {mensaje && (
@@ -857,6 +754,75 @@ export default function Home() {
           <MensajeAlerta mensaje={mensaje} tipo={mensajeTipo} onClose={() => setMensaje("")} />
         </div>
       )}
+
+      <div className="relative z-10 mx-auto flex max-w-[1600px] items-start gap-4 px-4 py-4 lg:px-6">
+        <aside className="hidden w-72 shrink-0 lg:sticky lg:top-28 lg:block">
+          <div className="ux-panel rounded-lg p-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Centro de trabajo</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">Propósito 1</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">Organiza el diagnóstico actual del servicio y sus evidencias metodológicas.</p>
+            </div>
+
+            <div className="mt-3">
+              <p className="px-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Módulos</p>
+              <div className="mt-2 space-y-1">
+                <SidebarNavButton active={current === "catalogo"} icon={<Clipboard className="h-4 w-4" />} label="Catálogo" helper="Herramientas" onClick={() => setCurrent("catalogo")} />
+                <SidebarNavButton active={current === "calendarizacion"} icon={<CalendarDays className="h-4 w-4" />} label="Calendarización" helper="Fechas" onClick={() => setCurrent("calendarizacion")} />
+                <SidebarNavButton active={current === "dashboard"} icon={<TrendingUp className="h-4 w-4" />} label="Síntesis" helper="Diagnóstico" onClick={() => setCurrent("dashboard")} />
+                <SidebarNavButton active={current === "evidencias"} icon={<FileText className="h-4 w-4" />} label="Evidencias" helper="Respaldos" onClick={() => setCurrent("evidencias")} />
+                <SidebarNavButton active={current === "resultados"} icon={<CheckCircle className="h-4 w-4" />} label="Resultados" helper="Etapas" onClick={() => setCurrent("resultados")} />
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-slate-100 pt-3">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Etapas</p>
+                <span className="text-[11px] font-bold text-slate-500">{etapasCompletadas}/{totalEtapas}</span>
+              </div>
+              <div className="mt-2 space-y-1">
+                {ruta.map((etapa) => {
+                  const esCurrent = current === flujoDesdeEtapa(etapa);
+                  return (
+                    <SidebarEtapaButton
+                      key={`${etapa.numero}-${etapa.clave}`}
+                      etapa={etapa}
+                      active={esCurrent}
+                      onClick={() => irAEtapa(etapa)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div className="ux-workspace-content min-w-0 flex-1">
+          <div className="mb-4 block lg:hidden">
+            <div className="ux-panel rounded-lg p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Recorrido metodológico</p>
+                  <p className="text-xs font-semibold text-slate-700">Siete etapas del Propósito 1</p>
+                </div>
+                <span className="text-xs font-semibold text-slate-500">{etapasCompletadas}/{totalEtapas}</span>
+              </div>
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {ruta.map((etapa) => {
+                  const esCurrent = current === flujoDesdeEtapa(etapa);
+                  return (
+                    <EtapaTab
+                      key={`${etapa.numero}-${etapa.clave}`}
+                      etapa={etapa}
+                      activa={esCurrent}
+                      icono={etapaIcono[etapa.clave] ?? <Circle className="h-5 w-5" />}
+                      onClick={() => irAEtapa(etapa)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
       {current !== "catalogo" && current !== "calendarizacion" && current !== "ejecucion" && current !== "resultados" && current !== "trazabilidad" && (
       <div className="relative z-10 border-b border-slate-100 bg-white px-6 py-3">
@@ -917,7 +883,7 @@ export default function Home() {
       </div>
       )}
 
-      <section className="relative z-10 ux-reveal">
+      <section key={current} className="relative z-10 ux-reveal">
         {current === "catalogo" && <CatalogoHerramientasProp1 onAbrirHerramienta={abrirHerramienta} />}
         {current === "calendarizacion" && <CalendarizacionProp1 apiUrl={API_URL} proyectoId={PROYECTO_ID} />}
         {current === "ejecucion" && (
@@ -983,6 +949,8 @@ export default function Home() {
           />
         )}
       </section>
+        </div>
+      </div>
     </main>
   );
 }
@@ -1132,6 +1100,133 @@ function PropositoCard({
   );
 }
 
+function ToolCard({
+  active,
+  icon,
+  label,
+  helper,
+  onClick,
+}: {
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  helper: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group min-w-0 rounded-lg border p-3 text-left transition-all duration-200 ${
+        active
+          ? "border-teal-300 bg-[#d4f0e7] text-teal-900 shadow-sm ring-2 ring-teal-100"
+          : "border-slate-200 bg-[#f8fbf6] text-slate-700 hover:-translate-y-0.5 hover:border-teal-200 hover:bg-[#eef7f0] hover:shadow-sm"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
+          active ? "border-teal-200 bg-white text-teal-700" : "border-slate-200 bg-[#e8f0ed] text-slate-600"
+        }`}>
+          {icon}
+        </span>
+        <ArrowRight className={`h-4 w-4 transition-transform duration-200 ${active ? "text-teal-700" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-500"}`} />
+      </div>
+      <p className="mt-3 truncate text-sm font-bold">{label}</p>
+      <p className={`mt-0.5 text-xs font-semibold ${active ? "text-teal-700" : "text-slate-500"}`}>{helper}</p>
+    </button>
+  );
+}
+
+function SidebarNavButton({
+  active,
+  icon,
+  label,
+  helper,
+  onClick,
+}: {
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  helper: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all duration-200 ${
+        active
+          ? "border-teal-200 bg-teal-50 text-teal-900 shadow-sm"
+          : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+      }`}
+    >
+      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
+        active ? "border-teal-200 bg-white text-teal-700" : "border-slate-200 bg-white text-slate-500"
+      }`}>
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold">{label}</span>
+        <span className={`block truncate text-xs font-semibold ${active ? "text-teal-700" : "text-slate-400"}`}>{helper}</span>
+      </span>
+      <ArrowRight className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? "text-teal-700" : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-500"}`} />
+    </button>
+  );
+}
+
+function SidebarEtapaButton({
+  etapa,
+  active,
+  onClick,
+}: {
+  etapa: RutaEtapa;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const estadoLabel = active
+    ? "Activa"
+    : etapa.completada
+    ? "Completa"
+    : etapa.estado_ruta === "disponible"
+    ? "Disponible"
+    : etapa.estado_ruta === "incompleta"
+    ? "Revisar"
+    : "Pendiente";
+  const estadoClass = active
+    ? "bg-teal-600 text-white"
+    : etapa.completada
+    ? "bg-emerald-600 text-white"
+    : etapa.estado_ruta === "disponible"
+    ? "bg-sky-100 text-sky-700"
+    : etapa.estado_ruta === "incompleta"
+    ? "bg-amber-100 text-amber-700"
+    : "bg-slate-100 text-slate-500";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-all duration-200 ${
+        active
+          ? "border-teal-200 bg-teal-50 shadow-sm"
+          : etapa.completada
+          ? "border-emerald-100 bg-emerald-50/50 hover:border-emerald-200"
+          : "border-transparent hover:border-slate-200 hover:bg-slate-50"
+      }`}
+    >
+      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${active ? "bg-teal-600 text-white" : etapa.completada ? "bg-emerald-600 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}>
+        {etapa.numero}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={`block truncate text-xs font-bold ${active ? "text-teal-900" : "text-slate-700"}`}>{etapa.nombre}</span>
+        <span className={`mt-0.5 inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] ${estadoClass}`}>
+          {estadoLabel}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 function EtapaTab({
   etapa,
   activa,
@@ -1178,55 +1273,60 @@ function EtapaTab({
     <button
       type="button"
       onClick={onClick}
-      className={`group rounded-lg border px-3 py-3 text-left transition-all duration-150 ${
+      className={`group relative min-h-[96px] rounded-lg border p-2.5 text-left transition-all duration-200 ${
         activa
-          ? "border-teal-300 bg-white shadow-sm ring-2 ring-teal-100"
-          : isLocked
-          ? "border-slate-200 bg-white/70 opacity-70"
-          : isReview
-          ? "border-amber-200 bg-amber-50/60 hover:bg-amber-50"
-          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+          ? "border-teal-300 bg-[#effbf6] shadow-md shadow-teal-900/10 ring-2 ring-teal-100"
+        : isLocked
+          ? "border-slate-200 bg-[#edf3f2]/80 opacity-80"
+        : isReview
+          ? "border-amber-200 bg-[#fff4d7]/80 hover:bg-[#fff0c2] hover:shadow-sm"
+          : estado === "completada"
+          ? "border-emerald-200 bg-[#e7f7ec] hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-sm"
+          : "border-slate-200 bg-[#fbfcf7] hover:-translate-y-0.5 hover:border-teal-200 hover:bg-[#eef7f0] hover:shadow-sm"
       }`}
     >
-      <div className="flex items-center gap-2">
-        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-          activa ? "bg-teal-600 text-white" : estado === "completada" ? "bg-emerald-600 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
+      <div className="flex items-center justify-between gap-2">
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold ${
+          activa ? "bg-teal-600 text-white" : estado === "completada" ? "bg-emerald-600 text-white" : "bg-[#f8fbf6] text-slate-500 ring-1 ring-slate-200"
         }`}>
           {etapa.numero}
         </span>
-        <span className={
-          activa ? "text-teal-700" : isLocked ? "text-slate-400" : isReview ? "text-amber-600" : "text-slate-600 group-hover:text-slate-900"
-        }>
-          {icono}
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border [&_svg]:h-3.5 [&_svg]:w-3.5 ${
+          activa
+            ? "border-teal-200 bg-teal-50 text-teal-700"
+            : isReview
+            ? "border-amber-200 bg-white text-amber-700"
+            : estado === "completada"
+            ? "border-emerald-200 bg-white text-emerald-700"
+            : "border-slate-200 bg-[#e7efed] text-slate-500"
+        }`}>
+          {estado === "completada" ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : isLocked ? <Lock className="h-3.5 w-3.5" /> : icono}
         </span>
-        <span
-          className={`min-w-0 flex-1 truncate text-xs font-bold transition-colors duration-150 ${
-            activa ? "text-slate-900" : isLocked ? "text-slate-500" : isReview ? "text-amber-800" : "text-slate-700 group-hover:text-slate-900"
+      </div>
+
+      <div className="mt-2.5">
+        <p
+          className={`line-clamp-2 text-xs font-bold leading-4 transition-colors duration-150 ${
+            activa ? "text-slate-950" : isLocked ? "text-slate-500" : isReview ? "text-amber-900" : "text-slate-800 group-hover:text-slate-950"
           }`}
         >
           {etapa.nombre}
-        </span>
-        {estado === "completada" && (
-          <span className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-100 shadow-sm">
-            <Check className="h-3 w-3 text-teal-700" strokeWidth={3} />
-          </span>
-        )}
-        {estado === "actual" && !activa && (
-          <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600 shadow-sm" />
-        )}
-        {estado === "disponible" && (
-          <span className="ml-auto rounded-full bg-teal-50 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 ring-1 ring-teal-100">
-            Sigue
-          </span>
-        )}
-        {isLocked && (
-          <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-300" />
-        )}
+        </p>
       </div>
-      <div className="mt-2 flex items-center gap-2">
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] ${estadoClass}`}>
           {estadoLabel}
         </span>
+      </div>
+
+      <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${
+            estado === "completada" ? "bg-emerald-500" : activa || estado === "disponible" ? "bg-teal-500" : isReview ? "bg-amber-400" : "bg-slate-300"
+          }`}
+          style={{ width: estado === "completada" ? "100%" : activa ? "62%" : estado === "disponible" ? "38%" : isReview ? "45%" : "14%" }}
+        />
       </div>
     </button>
   );
