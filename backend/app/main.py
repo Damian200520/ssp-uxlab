@@ -37,10 +37,20 @@ from app.models import (
 )
 from app import crud, ai_service, storage_service
 
+DEFAULT_FRONTEND_URLS = [
+    "https://ssp-uxlab.vercel.app",
+]
+
 FRONTEND_URLS = [
     url.strip()
     for url in os.getenv("FRONTEND_URLS", "").split(",")
     if url.strip()
+]
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    *DEFAULT_FRONTEND_URLS,
+    *FRONTEND_URLS,
 ]
 
 
@@ -55,11 +65,7 @@ app.mount("/uploads", StaticFiles(directory=str(storage_service.UPLOAD_ROOT)), n
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        *FRONTEND_URLS,
-    ],
+    allow_origins=list(dict.fromkeys(ALLOWED_ORIGINS)),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
