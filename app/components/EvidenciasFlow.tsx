@@ -113,7 +113,7 @@ function urlEvidencia(url?: string | null) {
   return url;
 }
 
-export default function EvidenciasFlow() {
+export default function EvidenciasFlow({ proyectoId = PROYECTO_ID }: { proyectoId?: string }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
@@ -143,7 +143,7 @@ export default function EvidenciasFlow() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          proyecto_id: PROYECTO_ID,
+          proyecto_id: proyectoId,
           etapa: filtroEtapa === "todas" ? null : filtroEtapa,
           evidencias: lista.map((e) => ({
             nombre_archivo: e.nombre_archivo,
@@ -181,7 +181,7 @@ export default function EvidenciasFlow() {
     setMessage("");
 
     try {
-      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/evidencias`);
+      const res = await fetch(`${API_URL}/proyectos/${proyectoId}/evidencias`);
 
       if (!res.ok) throw new Error(await res.text());
 
@@ -193,7 +193,7 @@ export default function EvidenciasFlow() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [proyectoId]);
 
   useEffect(() => {
     cargarEvidencias();
@@ -253,7 +253,7 @@ export default function EvidenciasFlow() {
     setMessage("");
 
     const payloadBase = {
-      proyecto_id: PROYECTO_ID,
+      proyecto_id: proyectoId,
       calendarizacion_id: null,
       etapa: form.etapa,
       nombre_archivo: form.nombre_archivo.trim(),

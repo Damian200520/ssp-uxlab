@@ -207,8 +207,10 @@ function oportunidadFallback(form: FormState, necesidad?: Necesidad) {
 }
 
 export default function VinculacionFlow({
+  proyectoId = PROYECTO_ID,
   onNavigate,
 }: {
+  proyectoId?: string;
   onNavigate?: (flujo: string | null) => void;
 }) {
   const [tab, setTab] = useState<TabVinculacion>("formulario");
@@ -265,8 +267,8 @@ export default function VinculacionFlow({
     setLoadingData(true);
     try {
       const [necesidadesRes, vinculacionesRes] = await Promise.all([
-        fetch(`${API_URL}/proyectos/${PROYECTO_ID}/necesidades`),
-        fetch(`${API_URL}/proyectos/${PROYECTO_ID}/vinculaciones`),
+        fetch(`${API_URL}/proyectos/${proyectoId}/necesidades`),
+        fetch(`${API_URL}/proyectos/${proyectoId}/vinculaciones`),
       ]);
 
       if (!necesidadesRes.ok) {
@@ -297,7 +299,7 @@ export default function VinculacionFlow({
     } finally {
       setLoadingData(false);
     }
-  }, [addToast]);
+  }, [addToast, proyectoId]);
 
   useEffect(() => {
     cargarDatos();
@@ -422,7 +424,7 @@ export default function VinculacionFlow({
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...(editingId ? {} : { proyecto_id: PROYECTO_ID }),
+          ...(editingId ? {} : { proyecto_id: proyectoId }),
           necesidad_id: form.necesidadId,
           actividad_servicio: form.servicioInstitucional.trim(),
           descripcion_vinculo: serializarMeta(form),

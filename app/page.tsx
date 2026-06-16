@@ -49,6 +49,15 @@ type Usuario = {
   cargo?: string;
 };
 
+type ProyectoActivo = {
+  id: string;
+  usuario_id?: string;
+  nombre_proyecto: string;
+  proposito_id: number;
+  estado: string;
+  etapa_actual: number;
+};
+
 type Proposito = {
   id: number;
   titulo: string;
@@ -246,6 +255,7 @@ export default function Home() {
   const [current, setCurrent] = useState<FlujoActivo>("catalogo");
 
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [proyectoActivo, setProyectoActivo] = useState<ProyectoActivo | null>(null);
   const [propositos, setPropositos] = useState<Proposito[]>([]);
   const [rutaData, setRutaData] = useState<RutaResponse | null>(null);
 
@@ -260,6 +270,7 @@ export default function Home() {
   const [mensaje, setMensaje] = useState("");
   const [mensajeTipo, setMensajeTipo] = useState<"success" | "warning" | "error">("warning");
 
+  const proyectoIdActual = proyectoActivo?.id || PROYECTO_ID;
   const ruta = rutaData?.ruta?.length ? rutaData.ruta : etapasFallback;
 
   const porcentajeAvance = useMemo(() => {
@@ -272,13 +283,23 @@ export default function Home() {
 
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("ssp_uxlab_usuario");
+    const proyectoGuardado = localStorage.getItem("ssp_uxlab_proyecto_activo");
     if (usuarioGuardado) {
       try {
         const parsed = JSON.parse(usuarioGuardado);
         setUsuario(parsed);
-        setVista("propositos");
+        if (proyectoGuardado) {
+          setProyectoActivo(JSON.parse(proyectoGuardado));
+          setVista("propositos");
+        } else {
+          localStorage.removeItem("ssp_uxlab_usuario");
+          setMensajeTipo("warning");
+          setMensaje("Ingresa nuevamente para crear o recuperar tu proyecto personal.");
+          setVista("acceso");
+        }
       } catch {
         localStorage.removeItem("ssp_uxlab_usuario");
+        localStorage.removeItem("ssp_uxlab_proyecto_activo");
       }
     }
   }, []);
@@ -289,7 +310,7 @@ export default function Home() {
       const siguienteEtapa = customEvent.detail?.siguienteEtapa;
       try {
         if (siguienteEtapa) {
-          const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/etapa`, {
+          const res = await fetch(`${API_URL}/proyectos/${proyectoIdActual}/etapa`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ etapa_actual: siguienteEtapa }),
@@ -314,7 +335,7 @@ export default function Home() {
     }
     window.addEventListener("actualizar-ruta-proposito", actualizarRutaDesdeFlujo);
     return () => window.removeEventListener("actualizar-ruta-proposito", actualizarRutaDesdeFlujo);
-  }, []);
+  }, [proyectoIdActual]);
 
   async function cargarPropositos() {
     try {
@@ -331,7 +352,7 @@ export default function Home() {
 
   async function cargarRuta() {
     try {
-      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/ruta`);
+      const res = await fetch(`${API_URL}/proyectos/${proyectoIdActual}/ruta`);
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
       setRutaData(json.data);
@@ -368,9 +389,22 @@ export default function Home() {
         institucion: formUsuario.institucion,
         cargo: formUsuario.cargo,
       };
+      const proyectoProcesado = json.data?.proyecto_activo || null;
       setUsuario(usuarioProcesado);
+      setProyectoActivo(proyectoProcesado);
       localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioProcesado));
+      if (proyectoProcesado) {
+        localStorage.setItem("ssp_uxlab_proyecto_activo", JSON.stringify(proyectoProcesado));
+      } else {
+        localStorage.removeItem("ssp_uxlab_proyecto_activo");
+      }
       setVista("propositos");
+      setMensajeTipo("success");
+      setMensaje(
+        proyectoProcesado
+          ? `Proyecto activo: ${proyectoProcesado.nombre_proyecto}`
+          : "Acceso registrado. No se pudo resolver un proyecto activo."
+      );
     } catch (error) {
       console.warn("No se pudo conectar con el backend. Modo prototipo:", error);
       const usuarioLocal = {
@@ -381,7 +415,9 @@ export default function Home() {
         cargo: formUsuario.cargo || "Revisor/a",
       };
       setUsuario(usuarioLocal);
+      setProyectoActivo(null);
       localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioLocal));
+      localStorage.removeItem("ssp_uxlab_proyecto_activo");
       setVista("propositos");
     } finally {
       setLoading(false);
@@ -390,7 +426,10 @@ export default function Home() {
 
   function cerrarSesion() {
     localStorage.removeItem("ssp_uxlab_usuario");
+    localStorage.removeItem("ssp_uxlab_proyecto_activo");
     setUsuario(null);
+    setProyectoActivo(null);
+    setRutaData(null);
     setVista("acceso");
     setCurrent("catalogo");
   }
@@ -885,7 +924,7 @@ export default function Home() {
 
       <section key={current} className="relative z-10 ux-reveal">
         {current === "catalogo" && <CatalogoHerramientasProp1 onAbrirHerramienta={abrirHerramienta} />}
-        {current === "calendarizacion" && <CalendarizacionProp1 apiUrl={API_URL} proyectoId={PROYECTO_ID} />}
+        {current === "calendarizacion" && <CalendarizacionProp1 apiUrl={API_URL} proyectoId={proyectoIdActual} />}
         {current === "ejecucion" && (
           <EjecucionPasoAPasoProp1
             ruta={ruta}
@@ -899,7 +938,7 @@ export default function Home() {
         {current === "dashboard" && (
           <DashboardAvanceProp1
             apiUrl={API_URL}
-            proyectoId={PROYECTO_ID}
+            proyectoId={proyectoIdActual}
             ruta={ruta}
             resumenRuta={resumenRuta}
             onAbrirEtapa={irAEtapaNumero}
@@ -911,7 +950,7 @@ export default function Home() {
         {current === "resultados" && (
           <ResultadosActividadProp1
             apiUrl={API_URL}
-            proyectoId={PROYECTO_ID}
+            proyectoId={proyectoIdActual}
             ruta={ruta}
             onAbrirEtapa={irAEtapaNumero}
             onAbrirEvidencias={() => setCurrent("evidencias")}
@@ -920,20 +959,20 @@ export default function Home() {
         {current === "trazabilidad" && (
           <TrazabilidadProcesoProp1
             apiUrl={API_URL}
-            proyectoId={PROYECTO_ID}
+            proyectoId={proyectoIdActual}
             ruta={ruta}
             onAbrirEtapa={irAEtapaNumero}
             onAbrirEvidencias={() => setCurrent("evidencias")}
           />
         )}
-        {current === "investigacion" && <InvestigacionFlow onNavigate={navegarFlujo} />}
-        {current === "personas" && <PersonasFlow onNavigate={navegarFlujo} />}
-        {current === "habilitacion" && <HabilitacionFlow onNavigate={navegarFlujo} />}
-        {current === "necesidades" && <NecesidadesFlow onNavigate={navegarFlujo} />}
-        {current === "evidencias" && <EvidenciasFlow />}
-        {current === "vinculacion" && <VinculacionFlow onNavigate={navegarFlujo} />}
-        {current === "medicion" && <MedicionFlow onNavigate={navegarFlujo} />}
-        {current === "momentos" && <MomentosCriticosFlow onNavigate={navegarFlujo} />}
+        {current === "investigacion" && <InvestigacionFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
+        {current === "personas" && <PersonasFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
+        {current === "habilitacion" && <HabilitacionFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
+        {current === "necesidades" && <NecesidadesFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
+        {current === "evidencias" && <EvidenciasFlow proyectoId={proyectoIdActual} />}
+        {current === "vinculacion" && <VinculacionFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
+        {current === "medicion" && <MedicionFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
+        {current === "momentos" && <MomentosCriticosFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
         {false && (
           <PlaceholderEtapa
             icono={<BarChart3 className="h-10 w-10 text-slate-400" />}

@@ -118,11 +118,11 @@ function normalizarEstadoPerfil(value: unknown): EstadoPerfil {
     return estado === "validado" ? "Validado" : "Borrador";
 }
 
-function dbToPerfil(row: PersonaUsuariaRow): Perfil {
+function dbToPerfil(row: PersonaUsuariaRow, proyectoId: string): Perfil {
     return {
         id: String(row.id),
         created_at: row.created_at || "",
-        proyecto_id: String(row.proyecto_id || PROYECTO_ID),
+        proyecto_id: String(row.proyecto_id || proyectoId),
         rol: row.rol || "Persona Usuaria",
         nombre: row.nombre_arquetipo || "Perfil sin nombre",
         perfil: row.descripcion || "",
@@ -140,11 +140,11 @@ function dbToPerfil(row: PersonaUsuariaRow): Perfil {
     };
 }
 
-function formToPersonaUsuariaDb(form: FormState) {
+function formToPersonaUsuariaDb(form: FormState, proyectoId: string) {
     const validado = form.estado_perfil === "Validado";
 
     return {
-        proyecto_id: PROYECTO_ID,
+        proyecto_id: proyectoId,
         nombre_arquetipo: form.nombre,
         rol: form.rol,
         relacion_servicio: form.relacion_servicio,
@@ -226,8 +226,10 @@ function ConfirmDialog({
 }
 
 export default function PersonasFlow({
+    proyectoId = PROYECTO_ID,
     onNavigate
 }: {
+    proyectoId?: string;
     onNavigate?: (flujo: string | null) => void;
 }) {
     const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">("formulario");
@@ -257,12 +259,14 @@ export default function PersonasFlow({
 
     const cargarPerfiles = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/personas-usuarias`);
+            const res = await fetch(`${API_URL}/proyectos/${proyectoId}/personas-usuarias`);
 
             if (!res.ok) throw new Error(await res.text());
 
             const json = await res.json();
-            const perfilesNormalizados = (json.personas_usuarias || []).map(dbToPerfil);
+            const perfilesNormalizados = (json.personas_usuarias || []).map((row: PersonaUsuariaRow) =>
+                dbToPerfil(row, proyectoId)
+            );
             setPerfiles(perfilesNormalizados);
             setLienzoSeleccionado((prev) =>
                 prev ? (perfilesNormalizados.find((perfil: Perfil) => perfil.id === prev.id) ?? null) : null
@@ -274,12 +278,12 @@ export default function PersonasFlow({
                 "error"
             );
         }
-    }, [addToast]);
+    }, [addToast, proyectoId]);
 
     const cargarSugerenciasInvestigacion = useCallback(async () => {
         try {
             const res = await fetch(
-                `${API_URL}/proyectos/${PROYECTO_ID}/investigaciones`
+                `${API_URL}/proyectos/${proyectoId}/investigaciones`
             );
 
             if (!res.ok) {
@@ -308,7 +312,7 @@ export default function PersonasFlow({
             console.warn("No se pudieron cargar sugerencias desde Investigación:", error);
             setSugerenciasInvestigacion([]);
         }
-    }, []);
+    }, [proyectoId]);
 
     useEffect(() => {
         cargarPerfiles();
@@ -356,7 +360,7 @@ export default function PersonasFlow({
 
         setLoading(true);
 
-        const datosPerfil = formToPersonaUsuariaDb(form);
+        const datosPerfil = formToPersonaUsuariaDb(form, proyectoId);
 
         const res = await fetch(
             idEnEdicion

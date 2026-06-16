@@ -209,6 +209,64 @@ async def crear_proyecto(data: ProyectoCreate):
         await conn.close()
 
 
+async def obtener_o_crear_proyecto_activo_usuario(conn, usuario):
+    proyecto = await conn.fetchrow(
+        """
+        select
+            id::text,
+            usuario_id::text,
+            nombre_proyecto,
+            proposito_id,
+            estado::text,
+            etapa_actual,
+            created_at::text,
+            updated_at::text
+        from proyecto
+        where usuario_id = $1::uuid
+          and proposito_id = 1
+        order by created_at asc
+        limit 1;
+        """,
+        usuario["id"],
+    )
+
+    if proyecto:
+        return dict(proyecto)
+
+    nombre_base = (
+        usuario.get("institucion")
+        or usuario.get("nombre_completo")
+        or usuario.get("email")
+        or "Servicio publico"
+    )
+
+    proyecto = await conn.fetchrow(
+        """
+        insert into proyecto (
+            usuario_id,
+            nombre_proyecto,
+            proposito_id,
+            estado,
+            etapa_actual
+        )
+        values ($1::uuid, $2, 1, 'en_progreso', 1)
+        returning
+            id::text,
+            usuario_id::text,
+            nombre_proyecto,
+            proposito_id,
+            estado::text,
+            etapa_actual,
+            created_at::text,
+            updated_at::text;
+        """,
+        usuario["id"],
+        f"Diagnostico UXLab - {nombre_base}",
+    )
+
+    return dict(proyecto)
+
+
 async def obtener_proyecto(proyecto_id: str):
     conn = await get_connection()
 
@@ -216,6 +274,7 @@ async def obtener_proyecto(proyecto_id: str):
         query = """
             select
                 id::text,
+                usuario_id::text,
                 nombre_proyecto,
                 proposito_id,
                 estado::text,
@@ -2159,6 +2218,8 @@ async def crear_o_actualizar_usuario_basico(data):
     conn = await get_connection()
 
     try:
+        email_normalizado = data.email.strip().lower()
+
         usuario_existente = await conn.fetchrow(
             """
             select
@@ -2172,7 +2233,7 @@ async def crear_o_actualizar_usuario_basico(data):
             where lower(email) = lower($1)
             limit 1;
             """,
-            data.email,
+            email_normalizado,
         )
 
         if usuario_existente:
@@ -2201,6 +2262,7 @@ async def crear_o_actualizar_usuario_basico(data):
             return {
                 "accion": "usuario_existente_actualizado",
                 "usuario": dict(row),
+                "proyecto_activo": await obtener_o_crear_proyecto_activo_usuario(conn, dict(row)),
             }
 
         row = await conn.fetchrow(
@@ -2225,7 +2287,7 @@ async def crear_o_actualizar_usuario_basico(data):
                 cargo,
                 created_at::text;
             """,
-            data.email,
+            email_normalizado,
             data.nombre_completo,
             data.institucion,
             data.cargo,
@@ -2234,6 +2296,7 @@ async def crear_o_actualizar_usuario_basico(data):
         return {
             "accion": "usuario_creado",
             "usuario": dict(row),
+            "proyecto_activo": await obtener_o_crear_proyecto_activo_usuario(conn, dict(row)),
         }
 
     finally:

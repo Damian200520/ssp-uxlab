@@ -165,8 +165,10 @@ function sugerenciaFallback(form: FormState, vinculacion?: Vinculacion) {
 }
 
 export default function MedicionFlow({
+  proyectoId = PROYECTO_ID,
   onNavigate,
 }: {
+  proyectoId?: string;
   onNavigate?: (flujo: string | null) => void;
 }) {
   const [tab, setTab] = useState<TabMedicion>("formulario");
@@ -217,8 +219,8 @@ export default function MedicionFlow({
     setLoadingData(true);
     try {
       const [vinculacionesRes, indicadoresRes] = await Promise.all([
-        fetch(`${API_URL}/proyectos/${PROYECTO_ID}/vinculaciones`),
-        fetch(`${API_URL}/proyectos/${PROYECTO_ID}/indicadores`),
+        fetch(`${API_URL}/proyectos/${proyectoId}/vinculaciones`),
+        fetch(`${API_URL}/proyectos/${proyectoId}/indicadores`),
       ]);
 
       if (!vinculacionesRes.ok) {
@@ -247,7 +249,7 @@ export default function MedicionFlow({
     } finally {
       setLoadingData(false);
     }
-  }, [addToast]);
+  }, [addToast, proyectoId]);
 
   useEffect(() => {
     cargarDatos();
@@ -368,7 +370,7 @@ export default function MedicionFlow({
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...(editingId ? {} : { proyecto_id: PROYECTO_ID }),
+          ...(editingId ? {} : { proyecto_id: proyectoId }),
           nombre: form.nombre.trim(),
           descripcion: serializarMeta(form),
           valor_base: numeroONull(form.valorBase),

@@ -227,8 +227,10 @@ function estadoClass(cumplimiento?: string) {
 }
 
 export default function HabilitacionFlow({
+  proyectoId = PROYECTO_ID,
   onNavigate,
 }: {
+  proyectoId?: string;
   onNavigate?: (flujo: string | null) => void;
 }) {
   const [tab, setTab] = useState<"habilitacion" | "expectativas" | "registros" | "lienzo">(
@@ -359,7 +361,7 @@ export default function HabilitacionFlow({
 
   async function cargarPersonasUsuarias() {
     try {
-      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/personas-usuarias`);
+      const res = await fetch(`${API_URL}/proyectos/${proyectoId}/personas-usuarias`);
 
       if (!res.ok) throw new Error(await res.text());
 
@@ -377,7 +379,7 @@ export default function HabilitacionFlow({
   }
   async function cargarHabilitaciones() {
     try {
-      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/habilitaciones`);
+      const res = await fetch(`${API_URL}/proyectos/${proyectoId}/habilitaciones`);
 
       if (!res.ok) throw new Error(await res.text());
 
@@ -398,7 +400,7 @@ export default function HabilitacionFlow({
 
   async function cargarExpectativas() {
     try {
-      const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/expectativas`);
+      const res = await fetch(`${API_URL}/proyectos/${proyectoId}/expectativas`);
 
       if (!res.ok) throw new Error(await res.text());
 
@@ -451,7 +453,7 @@ export default function HabilitacionFlow({
     }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [proyectoId]);
 
   async function guardarHabilitacion() {
     if (!perfilSeleccionado) {
@@ -496,7 +498,7 @@ export default function HabilitacionFlow({
           body: JSON.stringify(
             editingHabilitacionId
               ? datosGuardar
-              : { ...datosGuardar, proyecto_id: PROYECTO_ID }
+              : { ...datosGuardar, proyecto_id: proyectoId }
           ),
         }
       );
@@ -551,7 +553,7 @@ export default function HabilitacionFlow({
           body: JSON.stringify(
             editingExpectativaId
               ? payloadBase
-              : { ...payloadBase, proyecto_id: PROYECTO_ID }
+              : { ...payloadBase, proyecto_id: proyectoId }
           ),
         }
       );

@@ -200,8 +200,10 @@ function sintesisFallback(form: FormState, indicador?: Indicador) {
 }
 
 export default function MomentosCriticosFlow({
+  proyectoId = PROYECTO_ID,
   onNavigate,
 }: {
+  proyectoId?: string;
   onNavigate?: (flujo: string | null) => void;
 }) {
   const [tab, setTab] = useState<TabMomento>("formulario");
@@ -243,8 +245,8 @@ export default function MomentosCriticosFlow({
     setLoadingData(true);
     try {
       const [indicadoresRes, momentosRes] = await Promise.all([
-        fetch(`${API_URL}/proyectos/${PROYECTO_ID}/indicadores`),
-        fetch(`${API_URL}/proyectos/${PROYECTO_ID}/momentos-criticos`),
+        fetch(`${API_URL}/proyectos/${proyectoId}/indicadores`),
+        fetch(`${API_URL}/proyectos/${proyectoId}/momentos-criticos`),
       ]);
 
       if (!indicadoresRes.ok) {
@@ -273,7 +275,7 @@ export default function MomentosCriticosFlow({
     } finally {
       setLoadingData(false);
     }
-  }, [addToast]);
+  }, [addToast, proyectoId]);
 
   useEffect(() => {
     cargarDatos();
@@ -358,7 +360,7 @@ export default function MomentosCriticosFlow({
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...(editingId ? {} : { proyecto_id: PROYECTO_ID }),
+          ...(editingId ? {} : { proyecto_id: proyectoId }),
           descripcion: form.descripcion.trim(),
           punto_contacto: form.puntoContacto.trim(),
           impacto: form.impacto,

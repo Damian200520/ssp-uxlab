@@ -242,8 +242,10 @@ function ConfirmDialog({
 
 
 export default function NecesidadesFlow({
+    proyectoId = PROYECTO_ID,
     onNavigate
 }: {
+    proyectoId?: string;
     onNavigate?: (flujo: string | null) => void;
 }) {
     const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">("formulario");
@@ -277,7 +279,7 @@ export default function NecesidadesFlow({
 
     const cargarPersonas = useCallback(async (): Promise<Persona[]> => {
         try {
-            const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/personas-usuarias`);
+            const res = await fetch(`${API_URL}/proyectos/${proyectoId}/personas-usuarias`);
 
             if (!res.ok) throw new Error(await res.text());
 
@@ -293,11 +295,11 @@ export default function NecesidadesFlow({
             setPersonas([]);
             return [];
         }
-    }, [addToast]);
+    }, [addToast, proyectoId]);
 
     const cargarNecesidades = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/proyectos/${PROYECTO_ID}/necesidades`);
+            const res = await fetch(`${API_URL}/proyectos/${proyectoId}/necesidades`);
 
             if (!res.ok) throw new Error(await res.text());
 
@@ -314,7 +316,7 @@ export default function NecesidadesFlow({
                 "error"
             );
         }
-    }, [addToast]);
+    }, [addToast, proyectoId]);
 
     useEffect(() => {
         (async () => {
@@ -368,7 +370,7 @@ export default function NecesidadesFlow({
                 body: JSON.stringify(
                     idEnEdicion
                         ? datosNecesidad
-                        : { ...datosNecesidad, proyecto_id: PROYECTO_ID }
+                        : { ...datosNecesidad, proyecto_id: proyectoId }
                 ),
             }
         );

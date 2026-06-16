@@ -204,8 +204,10 @@ function ArrayEditor({
 }
 
 export default function InvestigacionFlow({
+  proyectoId = PROYECTO_ID,
   onNavigate
 }: {
+  proyectoId?: string;
   onNavigate?: (flujo: string | null) => void;
 }) {
   const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">(
@@ -223,7 +225,7 @@ export default function InvestigacionFlow({
   if (tab === "lienzo" && editingId === null && form.nombre_servicio.trim()) {
     return {
       id: "vista-previa",
-      proyecto_id: PROYECTO_ID,
+      proyecto_id: proyectoId,
       nombre_servicio: form.nombre_servicio,
       contexto_servicio: form.contexto_servicio,
       objetivo_investigacion: form.objetivo_investigacion,
@@ -242,7 +244,7 @@ export default function InvestigacionFlow({
   }
 
   return selected || investigaciones[0] || null;
-}, [tab, editingId, form, selected, investigaciones]);
+}, [tab, editingId, form, selected, investigaciones, proyectoId]);
 
   async function leerErrorBackend(res: Response) {
     const text = await res.text();
@@ -258,7 +260,7 @@ export default function InvestigacionFlow({
   async function listarInvestigaciones() {
     try {
       const res = await fetch(
-        `${API_URL}/proyectos/${PROYECTO_ID}/investigaciones`
+        `${API_URL}/proyectos/${proyectoId}/investigaciones`
       );
 
       if (!res.ok) {
@@ -328,7 +330,7 @@ export default function InvestigacionFlow({
   useEffect(() => {
     listarInvestigaciones();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [proyectoId]);
 
   function updateField<K extends keyof InvestigacionForm>(
     field: K,
@@ -380,7 +382,7 @@ export default function InvestigacionFlow({
       const payload = editingId
         ? form
         : {
-            proyecto_id: PROYECTO_ID,
+            proyecto_id: proyectoId,
             ...form,
           };
 
