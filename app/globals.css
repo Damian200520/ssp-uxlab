@@ -138,44 +138,77 @@ select:focus {
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(115deg, rgba(6, 78, 59, 0.95) 0%, rgba(15, 23, 42, 0.92) 42%, rgba(29, 78, 216, 0.7) 100%),
-    linear-gradient(180deg, #dbeae7 0%, #eef6f2 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 250, 0.92)),
+    #ffffff;
 }
 
 .ux-login-shell::before {
   content: "";
   position: absolute;
+  inset: -22% auto auto -10%;
+  width: 56vw;
+  height: 130vh;
+  pointer-events: none;
+  background:
+    linear-gradient(155deg, #10b981 0%, #00c48c 48%, #0f766e 100%);
+  border-radius: 0 0 58% 0;
+  box-shadow: 0 40px 90px rgba(16, 185, 129, 0.26);
+  transform: rotate(-6deg);
+}
+
+.ux-login-shell::after {
+  content: "";
+  position: absolute;
+  right: -16%;
+  bottom: -36%;
+  width: 62vw;
+  height: 72vh;
+  pointer-events: none;
+  background: linear-gradient(145deg, #22c55e 0%, #0f766e 64%, #0b4f4a 100%);
+  border-radius: 48% 0 0 0;
+  opacity: 0.96;
+  transform: rotate(8deg);
+}
+
+.ux-login-card {
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 34px 88px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.ux-login-card::before {
+  content: "";
+  position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(135deg, transparent 0 22%, rgba(20, 184, 166, 0.18) 22% 22.4%, transparent 22.4% 100%),
-    linear-gradient(35deg, transparent 0 62%, rgba(251, 191, 36, 0.12) 62% 62.45%, transparent 62.45% 100%);
-  background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
-  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.55));
+    linear-gradient(rgba(15, 118, 110, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 118, 110, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.5;
 }
 
 .ux-login-hero {
   position: relative;
-  min-height: 610px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  min-height: 560px;
   background:
-    linear-gradient(155deg, rgba(15, 118, 110, 0.88) 0%, rgba(15, 23, 42, 0.94) 58%, rgba(30, 64, 175, 0.82) 100%);
-  box-shadow: 0 34px 90px rgba(2, 6, 23, 0.34);
+    linear-gradient(155deg, rgba(6, 148, 114, 0.95) 0%, rgba(16, 185, 129, 0.92) 58%, rgba(15, 118, 110, 0.96) 100%);
 }
 
 .ux-login-hero::after {
   content: "";
   position: absolute;
-  inset: auto 0 0 0;
-  height: 42%;
+  left: -14%;
+  bottom: 9%;
+  width: 86%;
+  height: 33%;
   pointer-events: none;
+  border-radius: 999px;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
-  opacity: 0.28;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(240, 253, 250, 0.82));
+  opacity: 0.92;
+  transform: rotate(-7deg);
 }
 
 .ux-login-hero > * {
@@ -192,10 +225,9 @@ select:focus {
 }
 
 .ux-login-panel {
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  background: rgba(248, 250, 252, 0.94);
-  box-shadow: 0 34px 90px rgba(2, 6, 23, 0.3);
-  backdrop-filter: blur(18px);
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .ux-login-panel input,
@@ -218,7 +250,7 @@ select:focus {
 }
 
 .ux-login-panel:hover {
-  box-shadow: 0 38px 96px rgba(2, 6, 23, 0.34);
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .ux-login-metric:hover {
