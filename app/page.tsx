@@ -362,6 +362,44 @@ export default function Home() {
     }
   }
 
+  async function crearProyectoFallbackParaUsuario(usuarioProcesado: Usuario) {
+    if (!usuarioProcesado.id) return null;
+
+    const nombreBase =
+      usuarioProcesado.institucion ||
+      usuarioProcesado.nombre_completo ||
+      usuarioProcesado.email ||
+      "Servicio publico";
+
+    const crearRes = await fetch(`${API_URL}/proyectos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre_proyecto: `Diagnostico UXLab - ${nombreBase}`,
+        proposito_id: 1,
+      }),
+    });
+
+    if (!crearRes.ok) throw new Error(await crearRes.text());
+
+    const crearJson = await crearRes.json();
+    const proyectoCreado = crearJson.data || null;
+
+    if (!proyectoCreado?.id) return proyectoCreado;
+
+    const asociarRes = await fetch(
+      `${API_URL}/proyectos/${proyectoCreado.id}/usuario/${usuarioProcesado.id}`,
+      {
+        method: "PATCH",
+      }
+    );
+
+    if (!asociarRes.ok) throw new Error(await asociarRes.text());
+
+    const asociarJson = await asociarRes.json();
+    return asociarJson.data || proyectoCreado;
+  }
+
   useEffect(() => {
     if (vista === "propositos") cargarPropositos();
     if (vista === "proposito1") cargarRuta();
@@ -389,7 +427,8 @@ export default function Home() {
         institucion: formUsuario.institucion,
         cargo: formUsuario.cargo,
       };
-      const proyectoProcesado = json.data?.proyecto_activo || null;
+      const proyectoProcesado =
+        json.data?.proyecto_activo || (await crearProyectoFallbackParaUsuario(usuarioProcesado));
       setUsuario(usuarioProcesado);
       setProyectoActivo(proyectoProcesado);
       localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioProcesado));
