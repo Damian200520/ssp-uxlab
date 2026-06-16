@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, ArrowRight, ArrowLeft, Loader2, Lock, CalendarDays, TrendingUp } from "lucide-react";
@@ -541,57 +541,60 @@ export default function Home() {
   // VISTA: ACCESO
   if (vista === "acceso") {
     return (
-      <main className="ux-login-shell flex min-h-screen items-center px-4 py-7 text-slate-900 sm:px-6 lg:px-8">
-        <section className="ux-login-card relative z-10 mx-auto grid w-full max-w-5xl overflow-hidden rounded-lg lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="ux-login-hero ux-reveal overflow-hidden p-7 text-white sm:p-8">
-            <div className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3.5 py-2 shadow-sm backdrop-blur">
+      <main className="ux-login-shell flex min-h-screen items-center px-4 py-4 text-slate-900 sm:px-6 lg:px-8">
+        <section className="ux-login-card relative z-10 mx-auto grid w-full max-w-5xl overflow-hidden rounded-lg lg:grid-cols-[0.98fr_1.02fr]">
+          <div className="ux-login-hero ux-reveal order-2 flex flex-col justify-between gap-3 p-5 text-white sm:p-6 lg:order-2">
+            <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/20 bg-white/14 px-3.5 py-1.5 shadow-sm backdrop-blur">
               <span className="ux-status-dot h-2 w-2 rounded-full bg-emerald-300" />
               <span className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800">SSP · UXLab</span>
             </div>
 
-            <p className="mt-12 text-sm font-semibold uppercase tracking-[0.14em] text-teal-100">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-100">
               Propósito 1 · Experiencia usuaria
             </p>
-            <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-2 max-w-xl text-2xl font-bold tracking-tight text-white sm:text-3xl">
               Plataforma de apoyo metodológico para servicios públicos
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-teal-50/90">
+            <p className="mt-3 max-w-lg text-sm leading-6 text-teal-50/90">
               Un entorno digital para registrar información, ordenar evidencias y acompañar el avance del recorrido metodológico definido junto a UXLab.
             </p>
 
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
-              <div className="ux-login-metric rounded-lg px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-100/75">Alcance</p>
-                <p className="mt-1 text-sm font-bold text-white">MVP validado</p>
+            <div className="ux-login-preview mx-auto w-full max-w-md rounded-lg p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-100/75">Recorrido metodológico</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {["Investigación", "Personas usuarias", "Habilitación y expectativas", "Necesidades", "Vinculación", "Medición", "Momentos críticos"].map((etapa, index) => (
+                  <div key={etapa} className="flex min-h-9 items-center gap-2 rounded-lg bg-white/10 px-2.5 py-1.5">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-200 text-[11px] font-bold text-teal-950">
+                      {index + 1}
+                    </span>
+                    <span className="text-xs font-semibold leading-4 text-white">{etapa}</span>
+                  </div>
+                ))}
               </div>
-              <div className="ux-login-metric rounded-lg px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-100/75">Ruta</p>
-                <p className="mt-1 text-sm font-bold text-white">7 etapas</p>
-              </div>
-              <div className="ux-login-metric rounded-lg px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-100/75">IA</p>
-                <p className="mt-1 text-sm font-bold text-slate-800">Demo metodológica</p>
-              </div>
+              <p className="mt-3 text-xs leading-5 text-teal-50/75">
+                Cada cuenta conserva su propio proyecto, registros y evidencias del diagnóstico.
+              </p>
             </div>
-            <div className="mt-10 grid gap-3 rounded-lg border border-white/12 bg-slate-950/20 p-4 backdrop-blur sm:grid-cols-2">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="mt-0.5 h-5 w-5 text-emerald-300" />
+
+            <div className="grid gap-2 rounded-lg border border-white/16 bg-slate-950/20 p-2.5 backdrop-blur sm:grid-cols-2">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="mt-0.5 h-4 w-4 text-emerald-300" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Datos por cuenta</p>
-                  <p className="mt-1 text-xs leading-5 text-teal-50/75">Cada usuario trabaja en su propio proyecto activo.</p>
+                  <p className="text-xs font-semibold text-white">Datos por cuenta</p>
+                  <p className="mt-0.5 text-[11px] leading-4 text-teal-50/75">Proyecto activo propio por usuario.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <Clipboard className="mt-0.5 h-5 w-5 text-sky-200" />
+              <div className="flex items-start gap-2">
+                <Clipboard className="mt-0.5 h-4 w-4 text-sky-200" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Guía UXLab</p>
-                  <p className="mt-1 text-xs leading-5 text-teal-50/75">Recorrido alineado al diagnóstico institucional.</p>
+                  <p className="text-xs font-semibold text-white">Guía UXLab</p>
+                  <p className="mt-0.5 text-[11px] leading-4 text-teal-50/75">Diagnóstico institucional guiado.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="ux-login-panel ux-reveal-delay p-6 sm:p-8">
+          <div className="ux-login-panel ux-reveal-delay order-1 p-6 sm:p-8 lg:order-1">
             <div className="mb-6 border-b border-slate-100 pb-5">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">Ingreso al entorno</p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
@@ -1453,3 +1456,5 @@ function PlaceholderEtapa({
     </div>
   );
 }
+
+
