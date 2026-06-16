@@ -133,6 +133,100 @@ select:focus {
   opacity: 0.95;
 }
 
+.ux-login-shell {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(115deg, rgba(6, 78, 59, 0.95) 0%, rgba(15, 23, 42, 0.92) 42%, rgba(29, 78, 216, 0.7) 100%),
+    linear-gradient(180deg, #dbeae7 0%, #eef6f2 100%);
+}
+
+.ux-login-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(135deg, transparent 0 22%, rgba(20, 184, 166, 0.18) 22% 22.4%, transparent 22.4% 100%),
+    linear-gradient(35deg, transparent 0 62%, rgba(251, 191, 36, 0.12) 62% 62.45%, transparent 62.45% 100%);
+  background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.55));
+}
+
+.ux-login-hero {
+  position: relative;
+  min-height: 610px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(155deg, rgba(15, 118, 110, 0.88) 0%, rgba(15, 23, 42, 0.94) 58%, rgba(30, 64, 175, 0.82) 100%);
+  box-shadow: 0 34px 90px rgba(2, 6, 23, 0.34);
+}
+
+.ux-login-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 42%;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.28;
+}
+
+.ux-login-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.ux-login-hero .text-teal-800,
+.ux-login-hero .text-teal-700,
+.ux-login-hero .text-slate-800,
+.ux-login-hero .text-slate-700,
+.ux-login-hero .text-slate-600 {
+  color: #f0fdfa !important;
+}
+
+.ux-login-panel {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(248, 250, 252, 0.94);
+  box-shadow: 0 34px 90px rgba(2, 6, 23, 0.3);
+  backdrop-filter: blur(18px);
+}
+
+.ux-login-panel input,
+.ux-login-panel textarea,
+.ux-login-panel select {
+  border-color: rgba(148, 163, 184, 0.55) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+.ux-login-metric {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.ux-login-panel,
+.ux-login-metric {
+  transition: transform 210ms ease, box-shadow 210ms ease, border-color 210ms ease, background-color 210ms ease;
+}
+
+.ux-login-panel:hover {
+  box-shadow: 0 38px 96px rgba(2, 6, 23, 0.34);
+}
+
+.ux-login-metric:hover {
+  transform: translateY(-2px);
+  border-color: rgba(94, 234, 212, 0.36);
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .ux-topbar {
   border-bottom: 1px solid rgba(100, 116, 139, 0.45);
   background: rgba(255, 255, 255, 0.9);

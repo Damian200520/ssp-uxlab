@@ -541,41 +541,57 @@ export default function Home() {
   // VISTA: ACCESO
   if (vista === "acceso") {
     return (
-      <main className="ux-shell px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
-        <section className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="max-w-2xl ux-reveal">
-            <div className="inline-flex items-center gap-2 rounded-lg border border-teal-100 bg-white px-3.5 py-2 shadow-sm">
-              <span className="ux-status-dot h-2 w-2 rounded-full bg-teal-600" />
+      <main className="ux-login-shell px-4 py-7 text-slate-900 sm:px-6 lg:px-8">
+        <section className="relative z-10 mx-auto grid min-h-[calc(100vh-3.5rem)] w-full max-w-6xl items-center gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="ux-login-hero ux-reveal overflow-hidden rounded-lg p-7 text-white sm:p-8 lg:min-h-[640px]">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3.5 py-2 shadow-sm backdrop-blur">
+              <span className="ux-status-dot h-2 w-2 rounded-full bg-emerald-300" />
               <span className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800">SSP · UXLab</span>
             </div>
 
-            <p className="mt-8 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <p className="mt-16 text-sm font-semibold uppercase tracking-[0.14em] text-teal-100">
               Propósito 1 · Experiencia usuaria
             </p>
-            <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+            <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">
               Plataforma de apoyo metodológico para servicios públicos
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
+            <p className="mt-5 max-w-xl text-base leading-7 text-teal-50/90">
               Un entorno digital para registrar información, ordenar evidencias y acompañar el avance del recorrido metodológico definido junto a UXLab.
             </p>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="ux-card rounded-lg px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Alcance</p>
-                <p className="mt-1 text-sm font-bold text-slate-800">MVP validado</p>
+            <div className="mt-10 grid gap-3 sm:grid-cols-3">
+              <div className="ux-login-metric rounded-lg px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-100/75">Alcance</p>
+                <p className="mt-1 text-sm font-bold text-white">MVP validado</p>
               </div>
-              <div className="ux-card rounded-lg px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Ruta</p>
-                <p className="mt-1 text-sm font-bold text-slate-800">7 etapas</p>
+              <div className="ux-login-metric rounded-lg px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-100/75">Ruta</p>
+                <p className="mt-1 text-sm font-bold text-white">7 etapas</p>
               </div>
-              <div className="ux-card rounded-lg px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">IA</p>
+              <div className="ux-login-metric rounded-lg px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-100/75">IA</p>
                 <p className="mt-1 text-sm font-bold text-slate-800">Demo metodológica</p>
+              </div>
+            </div>
+            <div className="mt-10 grid gap-3 rounded-lg border border-white/12 bg-slate-950/20 p-4 backdrop-blur sm:grid-cols-2">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="mt-0.5 h-5 w-5 text-emerald-300" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Datos por cuenta</p>
+                  <p className="mt-1 text-xs leading-5 text-teal-50/75">Cada usuario trabaja en su propio proyecto activo.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Clipboard className="mt-0.5 h-5 w-5 text-sky-200" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Guía UXLab</p>
+                  <p className="mt-1 text-xs leading-5 text-teal-50/75">Recorrido alineado al diagnóstico institucional.</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="ux-panel ux-reveal-delay rounded-lg p-7">
+          <div className="ux-login-panel ux-reveal-delay rounded-lg p-6 sm:p-7">
             <div className="mb-6 border-b border-slate-100 pb-5">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">Ingreso al entorno</p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
