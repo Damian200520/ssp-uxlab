@@ -167,6 +167,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=CLAVE_PUBLICABLE
 
 En Vercel, `NEXT_PUBLIC_API_URL` debe apuntar al backend desplegado en Render.
 
+En Supabase Auth, configura:
+
+- **Site URL:** `https://ssp-uxlab.vercel.app`
+- **Redirect URLs:** `https://ssp-uxlab.vercel.app/**`
+
+El registro también envía `emailRedirectTo` con el origen actual, por lo que en
+desarrollo puede utilizar `http://localhost:3000/**` como URL adicional.
+
 ### Backend: `backend/.env`
 
 ```env

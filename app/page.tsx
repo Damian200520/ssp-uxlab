@@ -446,6 +446,7 @@ export default function Home() {
           ? await supabase.auth.signUp({
               ...credenciales,
               options: {
+                emailRedirectTo: `${window.location.origin}/`,
                 data: {
                   nombre_completo: formUsuario.nombre_completo.trim(),
                   institucion: formUsuario.institucion.trim(),
