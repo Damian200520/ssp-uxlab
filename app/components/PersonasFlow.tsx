@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Check, X, Smartphone, Phone } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
 import RecursosComplementarios from "./RecursosComplementarios";
+import { apiFetch as fetch } from "../../lib/api";
 
 
 interface Perfil {

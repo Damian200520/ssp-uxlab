@@ -1,5 +1,7 @@
-from app.database import get_connection
+from app.database import get_admin_connection, get_connection
 from app.models import ProyectoCreate, ActualizarEtapaProyecto, RegistroEtapaCreate
+from app.security import current_auth_user_id
+from app import crypto_service
 import json
 
 
@@ -179,16 +181,26 @@ async def crear_proyecto(data: ProyectoCreate):
     conn = await get_connection()
 
     try:
+        auth_user_id = current_auth_user_id.get()
         query = """
             insert into proyecto (
+                usuario_id,
                 nombre_proyecto,
                 proposito_id,
                 estado,
                 etapa_actual
             )
-            values ($1, $2, 'en_progreso', 1)
+            select
+                u.id,
+                $1,
+                $2,
+                'en_progreso',
+                1
+            from usuario u
+            where u.auth_user_id = $3::uuid
             returning
                 id::text,
+                usuario_id::text,
                 nombre_proyecto,
                 proposito_id,
                 estado::text,
@@ -201,9 +213,10 @@ async def crear_proyecto(data: ProyectoCreate):
             query,
             data.nombre_proyecto,
             data.proposito_id,
+            auth_user_id,
         )
 
-        return dict(row)
+        return dict(row) if row else None
 
     finally:
         await conn.close()
@@ -1650,10 +1663,18 @@ async def crear_calendarizacion(data):
             data.fecha_fin,
             data.responsable,
             data.estado,
-            data.observaciones,
+            crypto_service.cifrar_texto(
+                data.observaciones,
+                "calendarizacion.observaciones",
+            ),
         )
 
-        return dict(row)
+        result = dict(row)
+        result["observaciones"] = crypto_service.descifrar_texto(
+            result.get("observaciones"),
+            "calendarizacion.observaciones",
+        )
+        return result
 
     finally:
         await conn.close()
@@ -1683,7 +1704,15 @@ async def obtener_calendarizacion_por_proyecto(proyecto_id: str):
 
         rows = await conn.fetch(query, proyecto_id)
 
-        return [dict(row) for row in rows]
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["observaciones"] = crypto_service.descifrar_texto(
+                item.get("observaciones"),
+                "calendarizacion.observaciones",
+            )
+            result.append(item)
+        return result
 
     finally:
         await conn.close()
@@ -1715,7 +1744,12 @@ async def obtener_calendarizacion_por_id(calendarizacion_id: str):
         if not row:
             return None
 
-        return dict(row)
+        result = dict(row)
+        result["observaciones"] = crypto_service.descifrar_texto(
+            result.get("observaciones"),
+            "calendarizacion.observaciones",
+        )
+        return result
 
     finally:
         await conn.close()
@@ -1760,13 +1794,21 @@ async def actualizar_calendarizacion(calendarizacion_id: str, data):
             data.fecha_fin,
             data.responsable,
             data.estado,
-            data.observaciones,
+            crypto_service.cifrar_texto(
+                data.observaciones,
+                "calendarizacion.observaciones",
+            ),
         )
 
         if not row:
             return None
 
-        return dict(row)
+        result = dict(row)
+        result["observaciones"] = crypto_service.descifrar_texto(
+            result.get("observaciones"),
+            "calendarizacion.observaciones",
+        )
+        return result
 
     finally:
         await conn.close()
@@ -1842,11 +1884,19 @@ async def crear_evidencia(data):
             data.nombre_archivo,
             data.tipo_archivo,
             data.url_storage,
-            data.descripcion,
+            crypto_service.cifrar_texto(
+                data.descripcion,
+                "evidencia.descripcion",
+            ),
             data.responsable,
         )
 
-        return dict(row)
+        result = dict(row)
+        result["descripcion"] = crypto_service.descifrar_texto(
+            result.get("descripcion"),
+            "evidencia.descripcion",
+        )
+        return result
 
     finally:
         await conn.close()
@@ -1877,7 +1927,15 @@ async def listar_evidencias_por_proyecto(proyecto_id: str):
             proyecto_id,
         )
 
-        return [dict(row) for row in rows]
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["descripcion"] = crypto_service.descifrar_texto(
+                item.get("descripcion"),
+                "evidencia.descripcion",
+            )
+            result.append(item)
+        return result
 
     finally:
         await conn.close()
@@ -1919,11 +1977,21 @@ async def actualizar_evidencia(evidencia_id: str, data):
             data.nombre_archivo,
             data.tipo_archivo,
             data.url_storage,
-            data.descripcion,
+            crypto_service.cifrar_texto(
+                data.descripcion,
+                "evidencia.descripcion",
+            ),
             data.responsable,
         )
 
-        return dict(row) if row else None
+        if not row:
+            return None
+        result = dict(row)
+        result["descripcion"] = crypto_service.descifrar_texto(
+            result.get("descripcion"),
+            "evidencia.descripcion",
+        )
+        return result
 
     finally:
         await conn.close()
@@ -2189,6 +2257,23 @@ async def obtener_resultados_proyecto(proyecto_id: str):
             "total_etapas": total_etapas,
             "porcentaje_avance": porcentaje_avance,
         }
+        calendarizacion_descifrada = []
+        for row in calendarizacion:
+            item = dict(row)
+            item["observaciones"] = crypto_service.descifrar_texto(
+                item.get("observaciones"),
+                "calendarizacion.observaciones",
+            )
+            calendarizacion_descifrada.append(item)
+
+        evidencias_descifradas = []
+        for row in evidencias:
+            item = dict(row)
+            item["descripcion"] = crypto_service.descifrar_texto(
+                item.get("descripcion"),
+                "evidencia.descripcion",
+            )
+            evidencias_descifradas.append(item)
 
         return {
             "proyecto": dict(proyecto),
@@ -2201,8 +2286,8 @@ async def obtener_resultados_proyecto(proyecto_id: str):
                 "necesidades": [dict(row) for row in necesidades],
                 "vinculaciones": [dict(row) for row in vinculaciones],
                 "indicadores": [dict(row) for row in indicadores],
-                "calendarizacion": [dict(row) for row in calendarizacion],
-                "evidencias": [dict(row) for row in evidencias],
+                "calendarizacion": calendarizacion_descifrada,
+                "evidencias": evidencias_descifradas,
                 "momentos_criticos": [dict(row) for row in momentos_criticos],
             },
         }
@@ -2214,11 +2299,15 @@ async def obtener_resultados_proyecto(proyecto_id: str):
 # Acceso básico de usuario
 # =========================
 
-async def crear_o_actualizar_usuario_basico(data):
-    conn = await get_connection()
+async def crear_o_actualizar_usuario_basico(data, auth_user_id: str, auth_email: str):
+    conn = await get_admin_connection()
 
     try:
         email_normalizado = data.email.strip().lower()
+        if email_normalizado != auth_email.strip().lower():
+            raise ValueError("El correo del formulario no coincide con la sesión.")
+        nombre_completo = data.nombre_completo or email_normalizado.split("@", 1)[0]
+        institucion = data.institucion or "Sin institución informada"
 
         usuario_existente = await conn.fetchrow(
             """
@@ -2230,9 +2319,11 @@ async def crear_o_actualizar_usuario_basico(data):
                 cargo,
                 created_at::text
             from usuario
-            where lower(email) = lower($1)
+            where auth_user_id = $1::uuid
+               or lower(email) = lower($2)
             limit 1;
             """,
+            auth_user_id,
             email_normalizado,
         )
 
@@ -2241,9 +2332,10 @@ async def crear_o_actualizar_usuario_basico(data):
                 """
                 update usuario
                 set
-                    nombre_completo = coalesce($2, nombre_completo),
-                    institucion = coalesce($3, institucion),
-                    cargo = coalesce($4, cargo)
+                    auth_user_id = $2::uuid,
+                    nombre_completo = coalesce($3, nombre_completo),
+                    institucion = coalesce($4, institucion),
+                    cargo = coalesce($5, cargo)
                 where id = $1::uuid
                 returning
                     id::text,
@@ -2254,8 +2346,9 @@ async def crear_o_actualizar_usuario_basico(data):
                     created_at::text;
                 """,
                 usuario_existente["id"],
-                data.nombre_completo,
-                data.institucion,
+                auth_user_id,
+                nombre_completo,
+                institucion,
                 data.cargo,
             )
 
@@ -2268,16 +2361,18 @@ async def crear_o_actualizar_usuario_basico(data):
         row = await conn.fetchrow(
             """
             insert into usuario (
+                auth_user_id,
                 email,
                 nombre_completo,
                 institucion,
                 cargo
             )
             values (
-                $1,
+                $1::uuid,
                 $2,
                 $3,
-                $4
+                $4,
+                $5
             )
             returning
                 id::text,
@@ -2287,9 +2382,10 @@ async def crear_o_actualizar_usuario_basico(data):
                 cargo,
                 created_at::text;
             """,
+            auth_user_id,
             email_normalizado,
-            data.nombre_completo,
-            data.institucion,
+            nombre_completo,
+            institucion,
             data.cargo,
         )
 

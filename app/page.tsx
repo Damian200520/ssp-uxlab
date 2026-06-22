@@ -17,6 +17,8 @@ import VinculacionFlow from "./components/VinculacionFlow";
 import MedicionFlow from "./components/MedicionFlow";
 import MomentosCriticosFlow from "./components/MomentosCriticosFlow";
 import type { FlujoHerramienta } from "./data/herramientasProp1";
+import { apiFetch as fetch } from "../lib/api";
+import { getSupabaseClient } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const PROYECTO_ID =
@@ -264,7 +266,9 @@ export default function Home() {
     email: "",
     institucion: "",
     cargo: "",
+    password: "",
   });
+  const [modoAcceso, setModoAcceso] = useState<"ingresar" | "registrar">("ingresar");
 
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState("");
@@ -282,26 +286,39 @@ export default function Home() {
   }, [rutaData, ruta]);
 
   useEffect(() => {
-    const usuarioGuardado = localStorage.getItem("ssp_uxlab_usuario");
-    const proyectoGuardado = localStorage.getItem("ssp_uxlab_proyecto_activo");
-    if (usuarioGuardado) {
-      try {
-        const parsed = JSON.parse(usuarioGuardado);
-        setUsuario(parsed);
-        if (proyectoGuardado) {
-          setProyectoActivo(JSON.parse(proyectoGuardado));
-          setVista("propositos");
-        } else {
-          localStorage.removeItem("ssp_uxlab_usuario");
-          setMensajeTipo("warning");
-          setMensaje("Ingresa nuevamente para crear o recuperar tu proyecto personal.");
-          setVista("acceso");
-        }
-      } catch {
-        localStorage.removeItem("ssp_uxlab_usuario");
-        localStorage.removeItem("ssp_uxlab_proyecto_activo");
+    async function restaurarSesion() {
+      const supabase = getSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        return;
       }
+
+      const metadata = session.user.user_metadata || {};
+      const response = await fetch(`${API_URL}/usuarios/acceso`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.user.email,
+          nombre_completo: metadata.nombre_completo || undefined,
+          institucion: metadata.institucion || undefined,
+          cargo: metadata.cargo || undefined,
+        }),
+      });
+      if (!response.ok) throw new Error("No se pudo recuperar el perfil seguro.");
+
+      const json = await response.json();
+      setUsuario(json.data?.usuario || null);
+      setProyectoActivo(json.data?.proyecto_activo || null);
+      setVista("propositos");
     }
+
+    restaurarSesion().catch(() => {
+      setMensajeTipo("error");
+      setMensaje("No se pudo restaurar la sesión segura.");
+    });
   }, []);
 
   useEffect(() => {
@@ -411,13 +428,52 @@ export default function Home() {
       setMensaje("Debes ingresar un correo para acceder.");
       return;
     }
+    if (formUsuario.password.length < 8) {
+      setMensajeTipo("warning");
+      setMensaje("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
     setLoading(true);
     setMensaje("");
     try {
+      const supabase = getSupabaseClient();
+      const credenciales = {
+        email: formUsuario.email.trim().toLowerCase(),
+        password: formUsuario.password,
+      };
+      const authResult =
+        modoAcceso === "registrar"
+          ? await supabase.auth.signUp({
+              ...credenciales,
+              options: {
+                data: {
+                  nombre_completo: formUsuario.nombre_completo.trim(),
+                  institucion: formUsuario.institucion.trim(),
+                  cargo: formUsuario.cargo.trim(),
+                },
+              },
+            })
+          : await supabase.auth.signInWithPassword(credenciales);
+
+      if (authResult.error) throw authResult.error;
+
+      if (!authResult.data.session) {
+        setMensajeTipo("success");
+        setMensaje(
+          "Cuenta creada. Revisa tu correo para confirmar el acceso antes de ingresar."
+        );
+        return;
+      }
+
       const res = await fetch(`${API_URL}/usuarios/acceso`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formUsuario),
+        body: JSON.stringify({
+          email: credenciales.email,
+          nombre_completo: formUsuario.nombre_completo.trim() || undefined,
+          institucion: formUsuario.institucion.trim() || undefined,
+          cargo: formUsuario.cargo.trim() || undefined,
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
@@ -431,12 +487,6 @@ export default function Home() {
         json.data?.proyecto_activo || (await crearProyectoFallbackParaUsuario(usuarioProcesado));
       setUsuario(usuarioProcesado);
       setProyectoActivo(proyectoProcesado);
-      localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioProcesado));
-      if (proyectoProcesado) {
-        localStorage.setItem("ssp_uxlab_proyecto_activo", JSON.stringify(proyectoProcesado));
-      } else {
-        localStorage.removeItem("ssp_uxlab_proyecto_activo");
-      }
       setVista("propositos");
       setMensajeTipo("success");
       setMensaje(
@@ -445,27 +495,20 @@ export default function Home() {
           : "Acceso registrado. No se pudo resolver un proyecto activo."
       );
     } catch (error) {
-      console.warn("No se pudo conectar con el backend. Modo prototipo:", error);
-      const usuarioLocal = {
-        id: "usuario-demo",
-        email: formUsuario.email,
-        nombre_completo: formUsuario.nombre_completo || "Usuario demo",
-        institucion: formUsuario.institucion || "Institución demo",
-        cargo: formUsuario.cargo || "Revisor/a",
-      };
-      setUsuario(usuarioLocal);
-      setProyectoActivo(null);
-      localStorage.setItem("ssp_uxlab_usuario", JSON.stringify(usuarioLocal));
-      localStorage.removeItem("ssp_uxlab_proyecto_activo");
-      setVista("propositos");
+      console.warn("No se pudo iniciar la sesión segura:", error);
+      setMensajeTipo("error");
+      setMensaje(
+        error instanceof Error
+          ? error.message
+          : "No se pudo iniciar sesión. Revisa tus credenciales."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  function cerrarSesion() {
-    localStorage.removeItem("ssp_uxlab_usuario");
-    localStorage.removeItem("ssp_uxlab_proyecto_activo");
+  async function cerrarSesion() {
+    await getSupabaseClient().auth.signOut();
     setUsuario(null);
     setProyectoActivo(null);
     setRutaData(null);
@@ -628,6 +671,14 @@ export default function Home() {
                 required
               />
               <FormField
+                label="Contraseña"
+                type="password"
+                placeholder="Mínimo 8 caracteres"
+                value={formUsuario.password}
+                onChange={(v) => setFormUsuario((p) => ({ ...p, password: v }))}
+                required
+              />
+              <FormField
                 label="Institución"
                 placeholder="Ej.: Municipalidad / Servicio público"
                 value={formUsuario.institucion}
@@ -654,15 +705,27 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  Ingresar a la plataforma
+                  {modoAcceso === "ingresar"
+                    ? "Ingresar a la plataforma"
+                    : "Crear cuenta segura"}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
 
-            <p className="mt-4 text-center text-xs text-slate-400">
-              Acceso de demostración para revisión del MVP.
-            </p>
+            <button
+              type="button"
+              onClick={() =>
+                setModoAcceso((actual) =>
+                  actual === "ingresar" ? "registrar" : "ingresar"
+                )
+              }
+              className="mt-4 w-full text-center text-xs font-semibold text-teal-700 hover:text-teal-900"
+            >
+              {modoAcceso === "ingresar"
+                ? "¿Primera vez? Crear una cuenta"
+                : "Ya tengo cuenta. Volver al ingreso"}
+            </button>
           </div>
         </section>
       </main>

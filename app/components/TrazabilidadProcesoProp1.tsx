@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { apiFetch as fetch } from "../../lib/api";
 import {
   AlertTriangle,
   ArrowRight,

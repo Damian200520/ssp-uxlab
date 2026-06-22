@@ -1,9 +1,12 @@
 import os
+import time
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from app.database import get_connection
+from app import security
 
 from app.models import (
     ProyectoCreate,
@@ -35,7 +38,7 @@ from app.models import (
     IASugerenciaRequest,
     IAMejoraRedaccionRequest,
 )
-from app import crud, ai_service, storage_service
+from app import ai_service, crypto_service, crud, storage_service
 
 DEFAULT_FRONTEND_URLS = [
     "https://ssp-uxlab.vercel.app",
@@ -67,9 +70,85 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=list(dict.fromkeys(ALLOWED_ORIGINS)),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
+
+PUBLIC_PATHS = {
+    "/",
+    "/health",
+    "/propositos",
+    "/etapas",
+    "/herramientas",
+    "/openapi.json",
+}
+PUBLIC_PREFIXES = ("/docs", "/redoc", "/herramientas/proposito/")
+
+
+@app.middleware("http")
+async def seguridad_por_solicitud(request: Request, call_next):
+    request_id_value = request.headers.get("x-request-id") or security.request_id()
+    started_at = time.perf_counter()
+    tokens = None
+    user_id = None
+
+    try:
+        path = request.url.path
+        es_publica = (
+            request.method == "OPTIONS"
+            or path in PUBLIC_PATHS
+            or path.startswith(PUBLIC_PREFIXES)
+        )
+
+        if not es_publica:
+            user = security.validar_token_supabase(request)
+            user_id = user["id"]
+            tokens = security.activar_contexto_usuario(user)
+
+        response = await call_next(request)
+    except HTTPException as exc:
+        response = JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=exc.headers,
+        )
+    except Exception:
+        security.logger.exception(
+            "request_failed request_id=%s path=%s",
+            request_id_value,
+            request.url.path,
+        )
+        response = JSONResponse(
+            status_code=500,
+            content={
+                "detail": "Ocurrió un error interno.",
+                "request_id": request_id_value,
+            },
+        )
+    finally:
+        if tokens:
+            security.limpiar_contexto_usuario(tokens)
+
+    response.headers["X-Request-ID"] = request_id_value
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=(), browsing-topics=()"
+    )
+    response.headers["Cache-Control"] = "no-store"
+
+    security.log_event(
+        "http_request",
+        request_id_value=request_id_value,
+        status=str(response.status_code),
+        path=request.url.path,
+        user_id=user_id,
+    )
+    response.headers["Server-Timing"] = (
+        f"app;dur={(time.perf_counter() - started_at) * 1000:.1f}"
+    )
+    return response
 
 
 @app.get("/")
@@ -90,12 +169,19 @@ def health_check():
             "supabase_configured": bool(
                 storage_service.SUPABASE_URL and storage_service.SUPABASE_SERVICE_ROLE_KEY
             ),
-            "bucket": storage_service.SUPABASE_STORAGE_BUCKET,
+        },
+        "security": {
+            "authentication": "supabase_auth",
+            "rls_enforced_by_backend": True,
+            "field_encryption_enabled": crypto_service.cifrado_habilitado(),
         },
     }
 
 @app.get("/db-test")
 async def db_test():
+    if os.getenv("ENABLE_DIAGNOSTIC_ENDPOINTS", "false").lower() != "true":
+        raise HTTPException(status_code=404, detail="Recurso no encontrado.")
+
     conn = await get_connection()
     try:
         result = await conn.fetchval("select now();")
@@ -1029,7 +1115,15 @@ async def obtener_resultados_proyecto(proyecto_id: str):
 
 @app.post("/usuarios/acceso")
 async def acceso_basico_usuario(data: UsuarioAccesoCreate):
-    resultado = await crud.crear_o_actualizar_usuario_basico(data)
+    auth_user_id, auth_email = security.obtener_usuario_actual()
+    try:
+        resultado = await crud.crear_o_actualizar_usuario_basico(
+            data,
+            auth_user_id=auth_user_id,
+            auth_email=auth_email,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
     return {
         "message": "Acceso básico de usuario procesado correctamente",

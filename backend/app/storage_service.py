@@ -11,6 +11,27 @@ from uuid import uuid4
 from fastapi import HTTPException
 
 MAX_EVIDENCIA_BYTES = 10 * 1024 * 1024
+EXTENSIONES_PERMITIDAS = {
+    ".csv",
+    ".doc",
+    ".docx",
+    ".jpeg",
+    ".jpg",
+    ".pdf",
+    ".png",
+    ".ppt",
+    ".pptx",
+    ".txt",
+    ".webp",
+    ".xls",
+    ".xlsx",
+}
+MIME_TYPES_BLOQUEADOS = {
+    "image/svg+xml",
+    "text/html",
+    "application/javascript",
+    "text/javascript",
+}
 UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "uploads"
 EVIDENCIAS_UPLOAD_DIR = UPLOAD_ROOT / "evidencias"
 EVIDENCIAS_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -53,6 +74,20 @@ def nombre_seguro_archivo(nombre_original: str) -> str:
     return f"{uuid4().hex}{extension}"
 
 
+def validar_tipo_archivo(nombre_original: str, mime_type: str | None) -> None:
+    extension = Path(nombre_original).suffix.lower()
+    mime_normalizado = (mime_type or "").split(";", 1)[0].strip().lower()
+
+    if extension not in EXTENSIONES_PERMITIDAS or mime_normalizado in MIME_TYPES_BLOQUEADOS:
+        raise HTTPException(
+            status_code=415,
+            detail=(
+                "Tipo de archivo no permitido. Usa PDF, documentos de oficina, "
+                "imágenes rasterizadas, TXT o CSV."
+            ),
+        )
+
+
 def usar_supabase_storage() -> bool:
     if EVIDENCIA_STORAGE_MODE == "local":
         return False
@@ -64,6 +99,7 @@ def usar_supabase_storage() -> bool:
 
 
 def guardar_archivo_evidencia(data) -> str:
+    validar_tipo_archivo(data.nombre_original, data.mime_type)
     archivo_bytes = decodificar_archivo_base64(data.contenido_base64)
     nombre_final = nombre_seguro_archivo(data.nombre_original)
 
@@ -121,18 +157,18 @@ def subir_a_supabase_storage(
                     detail="Supabase Storage no acepto la carga del archivo.",
                 )
     except urllib.error.HTTPError as exc:
-        error_body = exc.read().decode("utf-8", errors="replace")
+        exc.read()
         raise HTTPException(
             status_code=502,
-            detail=f"Error al subir archivo a Supabase Storage: {error_body}",
+            detail="Supabase Storage rechazó la carga del archivo.",
         ) from exc
     except urllib.error.URLError as exc:
         raise HTTPException(
             status_code=502,
-            detail=f"No se pudo conectar con Supabase Storage: {exc.reason}",
+            detail="No se pudo conectar con Supabase Storage.",
         ) from exc
 
-    if EVIDENCIA_STORAGE_MODE == "private":
+    if EVIDENCIA_STORAGE_MODE != "public":
         return crear_signed_url(path)
 
     return f"{base_url}/storage/v1/object/public/{SUPABASE_STORAGE_BUCKET}/{path}"
@@ -158,15 +194,15 @@ def crear_signed_url(path: str) -> str:
         with urllib.request.urlopen(request, timeout=30) as response:
             body = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        error_body = exc.read().decode("utf-8", errors="replace")
+        exc.read()
         raise HTTPException(
             status_code=502,
-            detail=f"No se pudo crear URL firmada de Supabase Storage: {error_body}",
+            detail="No se pudo generar el acceso temporal al archivo.",
         ) from exc
     except urllib.error.URLError as exc:
         raise HTTPException(
             status_code=502,
-            detail=f"No se pudo conectar con Supabase Storage: {exc.reason}",
+            detail="No se pudo conectar con Supabase Storage.",
         ) from exc
 
     signed_url = body.get("signedURL") or body.get("signedUrl") or body.get("signed_url")

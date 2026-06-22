@@ -161,6 +161,8 @@ Abrir:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_PROYECTO_ID=UUID_DE_PROYECTO_DE_RESPALDO
+NEXT_PUBLIC_SUPABASE_URL=https://TU_PROYECTO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=CLAVE_PUBLICABLE
 ```
 
 En Vercel, `NEXT_PUBLIC_API_URL` debe apuntar al backend desplegado en Render.
@@ -171,10 +173,15 @@ En Vercel, `NEXT_PUBLIC_API_URL` debe apuntar al backend desplegado en Render.
 DATABASE_URL=URL_DE_CONEXION_POSTGRESQL
 IA_MODO=demo
 SUPABASE_URL=https://TU_PROYECTO.supabase.co
+# Opcional si SUPABASE_SERVICE_ROLE_KEY ya está configurada en el backend:
+SUPABASE_ANON_KEY=CLAVE_PUBLICABLE
 SUPABASE_SERVICE_ROLE_KEY=CLAVE_SOLO_BACKEND
 SUPABASE_STORAGE_BUCKET=evidencias-uxlab
 EVIDENCIA_STORAGE_MODE=supabase
 FRONTEND_URLS=http://localhost:3000,https://ssp-uxlab.vercel.app
+DATA_ENCRYPTION_KEY=CLAVE_BASE64_DE_32_BYTES
+DATABASE_SSL_VERIFY=false
+ENABLE_DIAGNOSTIC_ENDPOINTS=false
 ```
 
 Los archivos `.env` están excluidos mediante `.gitignore`. La clave
@@ -223,44 +230,54 @@ actual.
 
 - Variables sensibles excluidas del repositorio.
 - Clave de servicio de Supabase utilizada solamente por el backend.
+- Registro e inicio de sesión mediante Supabase Auth.
+- JWT validado por FastAPI antes de acceder a información del proyecto.
 - Flujo de datos principal mediado por FastAPI.
 - Validaciones de entrada mediante modelos Pydantic.
-- Datos organizados por `proyecto_id`.
-- RLS habilitado técnicamente en tablas principales de Supabase.
-- Archivos administrados mediante Supabase Storage.
+- RLS aplicado mediante `auth.uid()` en las tablas principales.
+- FastAPI ejecuta las consultas de usuario con el rol PostgreSQL
+  `authenticated`, evitando el bypass de RLS del rol `postgres`.
+- Aislamiento de registros por cuenta y proyecto.
+- Cifrado AES-256-GCM opcional para observaciones de calendarización y
+  descripciones de evidencias.
+- Logs técnicos sin cuerpos de formularios, tokens ni datos personales.
+- Archivos activos como HTML, SVG y JavaScript bloqueados en evidencias.
+- Evidencias nuevas entregadas mediante URL firmada, salvo que se configure
+  explícitamente almacenamiento público.
 - CORS restringido a los orígenes configurados.
+- Cabeceras CSP, HSTS, anti-clickjacking, `nosniff` y Permissions Policy.
+- Endpoint de diagnóstico de base de datos deshabilitado por defecto.
+- Dependencias de producción auditadas sin vulnerabilidades conocidas.
 
 ### Limitaciones conocidas
 
-- El acceso actual es un mecanismo de demo y no utiliza contraseña, JWT ni
-  Supabase Auth.
-- La sesión del frontend se conserva en `localStorage`.
-- Las políticas RLS existentes todavía no aplican aislamiento estricto mediante
-  `auth.uid()` y membresía por proyecto.
-- El backend usa credenciales privilegiadas y debe validar autorización antes de
-  considerarse apto para producción.
-- El cifrado adicional AES-256 a nivel de aplicación todavía no está
-  implementado.
-- Falta formalizar sanitización de logs, clasificación de datos sensibles,
-  rotación de claves y auditoría de accesos.
+- El perfil y el proyecto activo se reconstruyen desde el backend al restaurar
+  la sesión; no se guardan datos del proyecto en `localStorage`.
+- El modelo actual asocia cada proyecto a un usuario. Una colaboración
+  multiusuario requerirá una tabla de membresías y roles.
+- El cifrado de campos solo se activa cuando `DATA_ENCRYPTION_KEY` está
+  configurada en el backend.
+- Las claves de cifrado requieren un procedimiento formal de respaldo y
+  rotación antes de producción.
+- La verificación completa del certificado PostgreSQL requiere configurar
+  `DATABASE_SSL_VERIFY=true` junto con una cadena CA compatible. TLS continúa
+  siendo obligatorio cuando esta opción está desactivada.
+- Falta incorporar retención centralizada y alertas sobre eventos de seguridad.
 
 El diagnóstico y la estrategia de endurecimiento están documentados en
 [`SEGURIDAD_HITO3.md`](SEGURIDAD_HITO3.md).
 
 ## Próximos pasos
 
-1. Implementar autenticación real con Supabase Auth o un proveedor equivalente.
-2. Incorporar membresías de usuario por proyecto e institución.
-3. Reemplazar las políticas abiertas por RLS basado en identidad y proyecto.
-4. Sanitizar logs y evitar registrar formularios, URLs privadas o datos
-   personales.
-5. Clasificar los campos sensibles y definir cuáles requieren cifrado
-   AES-256-GCM a nivel de aplicación.
-6. Gestionar las claves de cifrado mediante secretos de Render y un proceso de
-   rotación.
-7. Normalizar enums y reforzar validaciones backend.
-8. Agregar pruebas automatizadas de autorización, persistencia y aislamiento
-   entre cuentas.
+1. Configurar los nuevos secretos de autenticación y cifrado en Render.
+2. Incorporar membresías y roles para proyectos colaborativos.
+3. Definir respaldo y rotación de `DATA_ENCRYPTION_KEY`.
+4. Migrar gradualmente los campos sensibles históricos que aún están en texto
+   plano.
+5. Configurar una CA compatible y habilitar verificación TLS completa.
+6. Normalizar enums y reforzar validaciones backend.
+7. Agregar pruebas automatizadas de autorización, persistencia y aislamiento.
+8. Configurar retención, consulta y alertas para logs de seguridad.
 
 ---
 

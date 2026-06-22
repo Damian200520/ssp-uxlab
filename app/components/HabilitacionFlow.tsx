@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
 import RecursosComplementarios from "./RecursosComplementarios";
+import { apiFetch as fetch } from "../../lib/api";
 
 const NIVELES = ["Bajo", "Medio", "Alto"] as const;
 const HAB_META_PREFIX = "::uxlab-hab-meta::";

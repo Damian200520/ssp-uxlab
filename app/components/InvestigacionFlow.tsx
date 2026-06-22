@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, X, Square } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
 import RecursosComplementarios from "./RecursosComplementarios";
+import { apiFetch as fetch } from "../../lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const PROYECTO_ID =

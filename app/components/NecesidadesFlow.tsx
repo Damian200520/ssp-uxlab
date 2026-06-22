@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, X, User } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
+import { apiFetch as fetch } from "../../lib/api";
 
 
 interface Persona {

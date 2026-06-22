@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import SidebarMetodologico from "./SidebarMetodologico";
 import RecursosComplementarios from "./RecursosComplementarios";
+import { apiFetch as fetch } from "../../lib/api";
 import {
   ArrowRight,
   Bot,
