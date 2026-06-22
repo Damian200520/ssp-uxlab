@@ -433,6 +433,16 @@ export default function Home() {
       setMensaje("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
+    if (
+      modoAcceso === "registrar" &&
+      (!formUsuario.nombre_completo.trim() ||
+        !formUsuario.institucion.trim() ||
+        !formUsuario.cargo.trim())
+    ) {
+      setMensajeTipo("warning");
+      setMensaje("Completa nombre, institución y cargo para crear la cuenta.");
+      return;
+    }
     setLoading(true);
     setMensaje("");
     try {
@@ -471,9 +481,11 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: credenciales.email,
-          nombre_completo: formUsuario.nombre_completo.trim() || undefined,
-          institucion: formUsuario.institucion.trim() || undefined,
-          cargo: formUsuario.cargo.trim() || undefined,
+          nombre_completo:
+            authResult.data.user?.user_metadata?.nombre_completo || undefined,
+          institucion:
+            authResult.data.user?.user_metadata?.institucion || undefined,
+          cargo: authResult.data.user?.user_metadata?.cargo || undefined,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -657,12 +669,17 @@ export default function Home() {
             )}
 
             <div className="space-y-4">
-              <FormField
-                label="Nombre completo"
-                placeholder="Ej.: Damián Muñoz"
-                value={formUsuario.nombre_completo}
-                onChange={(v) => setFormUsuario((p) => ({ ...p, nombre_completo: v }))}
-              />
+              {modoAcceso === "registrar" && (
+                <FormField
+                  label="Nombre completo"
+                  placeholder="Ej.: Damián Muñoz"
+                  value={formUsuario.nombre_completo}
+                  onChange={(v) =>
+                    setFormUsuario((p) => ({ ...p, nombre_completo: v }))
+                  }
+                  required
+                />
+              )}
               <FormField
                 label="Correo electrónico"
                 type="email"
@@ -679,18 +696,28 @@ export default function Home() {
                 onChange={(v) => setFormUsuario((p) => ({ ...p, password: v }))}
                 required
               />
-              <FormField
-                label="Institución"
-                placeholder="Ej.: Municipalidad / Servicio público"
-                value={formUsuario.institucion}
-                onChange={(v) => setFormUsuario((p) => ({ ...p, institucion: v }))}
-              />
-              <FormField
-                label="Cargo"
-                placeholder="Ej.: Encargado/a de atención ciudadana"
-                value={formUsuario.cargo}
-                onChange={(v) => setFormUsuario((p) => ({ ...p, cargo: v }))}
-              />
+              {modoAcceso === "registrar" && (
+                <>
+                  <FormField
+                    label="Institución"
+                    placeholder="Ej.: Municipalidad / Servicio público"
+                    value={formUsuario.institucion}
+                    onChange={(v) =>
+                      setFormUsuario((p) => ({ ...p, institucion: v }))
+                    }
+                    required
+                  />
+                  <FormField
+                    label="Cargo"
+                    placeholder="Ej.: Encargado/a de atención ciudadana"
+                    value={formUsuario.cargo}
+                    onChange={(v) =>
+                      setFormUsuario((p) => ({ ...p, cargo: v }))
+                    }
+                    required
+                  />
+                </>
+              )}
             </div>
 
             <button
@@ -716,11 +743,12 @@ export default function Home() {
 
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
                 setModoAcceso((actual) =>
                   actual === "ingresar" ? "registrar" : "ingresar"
-                )
-              }
+                );
+                setMensaje("");
+              }}
               className="mt-4 w-full text-center text-xs font-semibold text-teal-700 hover:text-teal-900"
             >
               {modoAcceso === "ingresar"
