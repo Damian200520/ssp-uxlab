@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
-  actividadesMetodologicasBase,
   actividadesTecnicasOcultas,
   etapaDesdeNumero,
   etapasCalendarizacionDb,
@@ -36,7 +35,6 @@ type Props = {
   proyectoId: string;
 };
 
-type FuenteDatos = "backend" | "backend-mixto" | "base-ui";
 type Filtro<T extends string> = "Todas" | T;
 
 type FormCalendarizacion = {
@@ -132,8 +130,8 @@ function actividadDesdeBackend(item: CalendarizacionBackend): ActividadCalendari
 }
 
 export default function CalendarizacionProp1({ apiUrl, proyectoId }: Props) {
-  const [actividades, setActividades] = useState<ActividadCalendarizada[]>(actividadesMetodologicasBase);
-  const [fuenteDatos, setFuenteDatos] = useState<FuenteDatos>("base-ui");
+  const [actividades, setActividades] = useState<ActividadCalendarizada[]>([]);
+  const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState("");
   const [tipoMensaje, setTipoMensaje] = useState<"success" | "warning" | "error">("warning");
   const [actividadSeleccionada, setActividadSeleccionada] = useState<ActividadCalendarizada | null>(null);
@@ -150,6 +148,7 @@ export default function CalendarizacionProp1({ apiUrl, proyectoId }: Props) {
     let activo = true;
 
     async function cargarCalendarizacion() {
+      setCargando(true);
       try {
         const res = await fetch(`${apiUrl}/proyectos/${proyectoId}/calendarizacion`);
         if (!res.ok) throw new Error(await res.text());
@@ -161,23 +160,15 @@ export default function CalendarizacionProp1({ apiUrl, proyectoId }: Props) {
 
         if (!activo) return;
 
-        if (actividadesBackend.length > 0) {
-          setActividades([...actividadesBackend.map(actividadDesdeBackend), ...actividadesMetodologicasBase]);
-          setFuenteDatos("backend-mixto");
-          setTipoMensaje("success");
-          setMensaje("Calendarización metodológica cargada desde backend y complementada con base UXLab.");
-        } else {
-          setActividades(actividadesMetodologicasBase);
-          setFuenteDatos("base-ui");
-          setTipoMensaje("warning");
-          setMensaje("Sin registros metodológicos backend; se muestra base UXLab de referencia.");
-        }
+        setActividades(actividadesBackend.map(actividadDesdeBackend));
+        setMensaje("");
       } catch {
         if (!activo) return;
-        setActividades(actividadesMetodologicasBase);
-        setFuenteDatos("base-ui");
-        setTipoMensaje("warning");
-        setMensaje("Backend no disponible; se muestra base UXLab de referencia.");
+        setActividades([]);
+        setTipoMensaje("error");
+        setMensaje("No pudimos cargar la calendarización. Intenta nuevamente en unos minutos.");
+      } finally {
+        if (activo) setCargando(false);
       }
     }
 
@@ -292,7 +283,6 @@ export default function CalendarizacionProp1({ apiUrl, proyectoId }: Props) {
       const creada = actividadDesdeBackend(json.data || payload);
       setActividades((actuales) => [creada, ...actuales]);
       setActividadSeleccionada(creada);
-      setFuenteDatos((actual) => (actual === "base-ui" ? "backend-mixto" : actual));
       setForm(formInicial);
       setFormAbierto(false);
       setErroresForm([]);
@@ -326,17 +316,11 @@ export default function CalendarizacionProp1({ apiUrl, proyectoId }: Props) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold shadow-sm ${
-              fuenteDatos === "backend" || fuenteDatos === "backend-mixto"
-                ? "border-teal-200 bg-teal-50 text-teal-700"
-                : "border-amber-200 bg-amber-50 text-amber-700"
-            }`}>
+            <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm">
               <ClipboardList className="h-4 w-4" />
-              {fuenteDatos === "backend-mixto"
-                ? "Backend + base UXLab"
-                : fuenteDatos === "backend"
-                ? "Datos backend"
-                : "Base UXLab"}
+              {cargando
+                ? "Cargando planificación..."
+                : `${actividades.length} ${actividades.length === 1 ? "actividad" : "actividades"}`}
             </span>
             <button
               type="button"
@@ -376,7 +360,7 @@ export default function CalendarizacionProp1({ apiUrl, proyectoId }: Props) {
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">Nueva actividad metodológica</p>
                 <h3 className="mt-1 text-lg font-bold text-slate-950">Crear actividad metodológica calendarizada</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Se guardará en `calendarizacion_actividad` usando solo campos reales de la tabla.
+                  Define la etapa, el período y la persona responsable de esta actividad.
                 </p>
               </div>
               <button
@@ -595,9 +579,31 @@ export default function CalendarizacionProp1({ apiUrl, proyectoId }: Props) {
               </table>
             </div>
 
-            {actividadesFiltradas.length === 0 && (
-              <div className="px-5 py-10 text-center text-sm text-slate-500">
-                No hay actividades metodológicas que coincidan con los filtros seleccionados.
+            {!cargando && actividadesFiltradas.length === 0 && (
+              <div className="px-5 py-12 text-center">
+                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                  <CalendarDays className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-sm font-bold text-slate-800">
+                  {filtrosActivos
+                    ? "No encontramos actividades con estos filtros"
+                    : "Comienza tu planificación metodológica"}
+                </p>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                  {filtrosActivos
+                    ? "Prueba cambiando los filtros para volver a visualizar tus actividades."
+                    : "Agrega la primera actividad del Propósito 1 con sus fechas, etapa y responsable."}
+                </p>
+                {!filtrosActivos && (
+                  <button
+                    type="button"
+                    onClick={() => setFormAbierto(true)}
+                    className="ux-button-primary mt-5 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Crear primera actividad
+                  </button>
+                )}
               </div>
             )}
           </div>
