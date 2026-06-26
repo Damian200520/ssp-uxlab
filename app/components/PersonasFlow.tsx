@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Check, X, Smartphone, Phone } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
-import RecursosComplementarios from "./RecursosComplementarios";
+import TagInput from "./TagInput";
 import { apiFetch as fetch } from "../../lib/api";
 
 
@@ -237,6 +237,7 @@ export default function PersonasFlow({
     const [perfiles, setPerfiles] = useState<Perfil[]>([]);
     const [sugerenciasInvestigacion, setSugerenciasInvestigacion] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
+    const [subiendoFoto, setSubiendoFoto] = useState(false);
     const [idEnEdicion, setIdEnEdicion] = useState<string | null>(null);
     const [lienzoSeleccionado, setLienzoSeleccionado] = useState<Perfil | null>(null);
     const [form, setForm] = useState<FormState>(FORM_INICIAL);
@@ -453,6 +454,46 @@ export default function PersonasFlow({
         setTab("lienzo");
     }
 
+    async function subirFoto(file?: File) {
+        if (!file) return;
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+            addToast("La imagen debe estar en formato JPG, PNG o WEBP.", "error");
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            addToast("La imagen no puede superar 2 MB.", "error");
+            return;
+        }
+
+        try {
+            setSubiendoFoto(true);
+            const contenidoBase64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ""));
+                reader.onerror = () => reject(new Error("No se pudo leer la imagen."));
+                reader.readAsDataURL(file);
+            });
+            const res = await fetch(`${API_URL}/personas-usuarias/imagen`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    proyecto_id: proyectoId,
+                    nombre_original: file.name,
+                    mime_type: file.type,
+                    contenido_base64: contenidoBase64,
+                }),
+            });
+            if (!res.ok) throw new Error(await res.text());
+            const json = await res.json();
+            setForm((actual) => ({ ...actual, foto_url: json.url || "" }));
+            addToast("Imagen cargada correctamente.", "success");
+        } catch (error) {
+            addToast(error instanceof Error ? error.message : "No se pudo cargar la imagen.", "error");
+        } finally {
+            setSubiendoFoto(false);
+        }
+    }
+
 
     return (
         <main className="min-h-0 bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
@@ -467,7 +508,7 @@ export default function PersonasFlow({
             )}
 
             <div className="flex">
-                <aside className="hidden min-h-0 w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+                <aside className="hidden">
                     <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
                     <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
                         {(
@@ -498,13 +539,7 @@ export default function PersonasFlow({
                     <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <div className="inline-flex rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-2 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
-                                    Propósito 1 · Diseñar servicios centrados en las personas
-                                </div>
-
-                                <div className="mt-5 h-1 w-16 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400" />
-
-                                <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">Personas</h1>
+                                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Personas usuarias</h1>
                                 <p className="mt-1 text-slate-500 leading-relaxed">
                                     Describe perfiles de personas usuarias para comprender roles, barreras, motivaciones y relacion con el servicio.
                                 </p>
@@ -523,7 +558,7 @@ export default function PersonasFlow({
 
                         <AsistenciaIAEtapa etapa={2} contexto="Personas" />
 
-                        <div className="mb-6 flex gap-6 border-b border-slate-200/80">
+                        <div className="ux-card mb-6 grid gap-2 rounded-lg p-2 sm:grid-cols-3">
               {(
                 [
                   ["formulario", idEnEdicion ? "Editando perfil…" : "Formulario"],
@@ -534,9 +569,9 @@ export default function PersonasFlow({
                                 <button
                                     key={key}
                                     onClick={() => setTab(key)}
-                                    className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${tab === key
-                                        ? "border-teal-600 text-teal-700"
-                                        : "border-transparent text-slate-500 hover:text-slate-700"
+                                    className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-150 ${tab === key
+                                        ? "bg-teal-600 text-white shadow-sm"
+                                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                                         }`}
                                 >
                                     {label}
@@ -549,7 +584,7 @@ export default function PersonasFlow({
                                 <div className="mb-4">
                                     <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Herramienta principal</p>
                                 </div>
-                                <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
+                                <div>
                                     <div className="space-y-6">
                                         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                                             <h2 className="text-xl font-bold tracking-tight">
@@ -638,15 +673,30 @@ export default function PersonasFlow({
 
                                             <div>
                                                 <label className="font-semibold text-sm text-slate-700">Foto o avatar del perfil</label>
+                                                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                                                    <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-xs font-bold text-teal-700 transition hover:bg-teal-100">
+                                                        {subiendoFoto ? "Cargando imagen..." : "Seleccionar desde el computador"}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/jpeg,image/png,image/webp"
+                                                            disabled={subiendoFoto}
+                                                            onChange={(event) => subirFoto(event.target.files?.[0])}
+                                                            className="sr-only"
+                                                        />
+                                                    </label>
+                                                    {form.foto_url && (
+                                                        <span className="text-xs font-semibold text-teal-700">Imagen lista para guardar</span>
+                                                    )}
+                                                </div>
                                                 <input
                                                     type="url"
                                                     value={form.foto_url}
                                                     onChange={(e) => setForm({ ...form, foto_url: e.target.value })}
-                                                    placeholder="Pega la URL de una imagen, por ejemplo https://..."
+                                                    placeholder="O pega la URL de una imagen"
                                                     className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
                                                 />
                                                 <p className="mt-1 text-xs text-slate-500">
-                                                    Opcional. Si no agregas una imagen, se mostrará la inicial del perfil en la ficha.
+                                                    JPG, PNG o WEBP, máximo 2 MB. Si no agregas una imagen, se mostrará la inicial del perfil.
                                                 </p>
                                             </div>
 
@@ -704,37 +754,10 @@ export default function PersonasFlow({
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-4">
-                                                <div>
-                                                    <label className="font-semibold text-sm text-emerald-700">Necesidades (Tags)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={form.necesidades_tag}
-                                                        onChange={(e) => setForm({ ...form, necesidades_tag: e.target.value })}
-                                                        placeholder="Ej: Información clara"
-                                                        className="mt-2 w-full rounded-xl border border-emerald-200/60 bg-emerald-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 hover:border-emerald-300"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="font-semibold text-sm text-orange-700">Barreras detectadas</label>
-                                                    <input
-                                                        type="text"
-                                                        value={form.barreras}
-                                                        onChange={(e) => setForm({ ...form, barreras: e.target.value })}
-                                                        placeholder="Ej: Falta de clave única"
-                                                        className="mt-2 w-full rounded-xl border border-orange-200/60 bg-orange-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 hover:border-orange-300"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="font-semibold text-sm text-blue-700">Motivaciones</label>
-                                                    <input
-                                                        type="text"
-                                                        value={form.motivaciones}
-                                                        onChange={(e) => setForm({ ...form, motivaciones: e.target.value })}
-                                                        placeholder="Ej: Autonomía"
-                                                        className="mt-2 w-full rounded-xl border border-blue-200/60 bg-blue-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 hover:border-blue-300"
-                                                    />
-                                                </div>
+                                            <div className="grid grid-cols-1 gap-5 border-t border-slate-100 pt-4 md:grid-cols-3">
+                                                <TagInput label="Necesidades" value={form.necesidades_tag} onChange={(value) => setForm({ ...form, necesidades_tag: value })} placeholder="Agregar necesidad" tone="teal" />
+                                                <TagInput label="Barreras detectadas" value={form.barreras} onChange={(value) => setForm({ ...form, barreras: value })} placeholder="Agregar barrera" tone="amber" />
+                                                <TagInput label="Motivaciones" value={form.motivaciones} onChange={(value) => setForm({ ...form, motivaciones: value })} placeholder="Agregar motivación" tone="sky" />
                                             </div>
 
                                             <div>
@@ -773,19 +796,6 @@ export default function PersonasFlow({
                                         </div>
                                     </div>
 
-                                    <aside className="space-y-5">
-                                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50">
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-sm">
-                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                                                </div>
-                                                <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                                                    Recursos complementarios
-                                                </p>
-                                            </div>
-                                            <RecursosComplementarios actividad="personas" />
-                                        </div>
-                                    </aside>
                                 </div>
                             </>
                         )}
@@ -797,7 +807,21 @@ export default function PersonasFlow({
                                 </div>
                                 <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
                                     <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
-                                        <h2 className="text-xl font-bold tracking-tight mb-6">Perfiles de persona guardados</h2>
+                                        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <h2 className="text-xl font-bold tracking-tight">Perfiles de persona guardados</h2>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setForm(FORM_INICIAL);
+                                                    setIdEnEdicion(null);
+                                                    setErroresForm({});
+                                                    setTab("formulario");
+                                                }}
+                                                className="ux-button-primary rounded-lg px-4 py-2 text-sm font-bold"
+                                            >
+                                                + Agregar nuevo perfil
+                                            </button>
+                                        </div>
                                         {perfiles.length === 0 ? (
                                             <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100/30 p-8 text-center">
                                                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50">
@@ -866,12 +890,14 @@ export default function PersonasFlow({
                                                             >
                                                                 Editar
                                                             </button>
-                                                            <button
-                                                                onClick={() => validarPerfil(p.id)}
-                                                                className="text-xs font-semibold text-green-700 transition-all duration-150 border border-green-200/60 px-3 py-1 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 shadow-sm"
-                                                            >
-                                                                Validar
-                                                            </button>
+                                                            {p.estado_perfil !== "Validado" && (
+                                                                <button
+                                                                    onClick={() => validarPerfil(p.id)}
+                                                                    className="text-xs font-semibold text-green-700 transition-all duration-150 border border-green-200/60 px-3 py-1 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 shadow-sm"
+                                                                >
+                                                                    Validar
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={() => solicitarEliminar(p.id)}
                                                                 className="text-xs font-semibold text-red-600 transition-all duration-150 border border-red-200/60 px-3 py-1 rounded-lg hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
@@ -1030,12 +1056,14 @@ export default function PersonasFlow({
                                                         >
                                                             Editar Perfil
                                                         </button>
-                                                        <button
-                                                            onClick={() => validarPerfil(lienzoSeleccionado.id)}
-                                                            className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
-                                                        >
-                                                            Validar Perfil
-                                                        </button>
+                                                        {lienzoSeleccionado.estado_perfil !== "Validado" && (
+                                                            <button
+                                                                onClick={() => validarPerfil(lienzoSeleccionado.id)}
+                                                                className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
+                                                            >
+                                                                Validar Perfil
+                                                            </button>
+                                                        )}
                                                     </>
                                                 )}
                                             </div>

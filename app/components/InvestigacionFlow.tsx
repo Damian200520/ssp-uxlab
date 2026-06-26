@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, X, Square } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
-import RecursosComplementarios from "./RecursosComplementarios";
 import { apiFetch as fetch } from "../../lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -56,10 +55,7 @@ function createInitialForm(): InvestigacionForm {
       "Investigación cualitativa mediante entrevistas semiestructuradas, observación en terreno y revisión documental.",
     documentos_consultados: ["Guía UXLab págs. 110-111"],
     aspectos_servicio: ["Motivaciones", "Barreras", "Experiencias", "Expectativas"],
-    personas_a_comprender: [
-      "Personas mayores",
-      "Usuarios con baja alfabetización digital",
-    ],
+    personas_a_comprender: [],
     informacion_recolectar: [
       "Motivaciones",
       "Barreras",
@@ -206,10 +202,12 @@ function ArrayEditor({
 
 export default function InvestigacionFlow({
   proyectoId = PROYECTO_ID,
-  onNavigate
+  onNavigate,
+  usuarioNombre = "Usuario del proyecto",
 }: {
   proyectoId?: string;
   onNavigate?: (flujo: string | null) => void;
+  usuarioNombre?: string;
 }) {
   const [tab, setTab] = useState<"formulario" | "registros" | "lienzo">(
     "formulario"
@@ -644,7 +642,7 @@ export default function InvestigacionFlow({
   return (
     <main className="min-h-0 bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
       <div className="flex">
-        <aside className="hidden min-h-0 w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+        <aside className="hidden">
           <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
 
           <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
@@ -677,13 +675,7 @@ export default function InvestigacionFlow({
           <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="inline-flex rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-2 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
-                  Propósito 1 · Diseñar servicios centrados en las personas
-                </div>
-
-                <div className="mt-5 h-1 w-16 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400" />
-
-                <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">Investigación</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Investigación</h1>
 
                 <p className="mt-1 text-slate-500 leading-relaxed">
                   Diseñar y ejecutar investigación de las personas usuarias del
@@ -705,7 +697,7 @@ export default function InvestigacionFlow({
 
             <AsistenciaIAEtapa etapa={1} contexto="Investigación" />
 
-            <div className="mb-6 flex gap-6 border-b border-slate-200/80">
+            <div className="ux-card mb-6 grid gap-2 rounded-lg p-2 sm:grid-cols-3">
               {[
                 ["formulario", "Formulario"],
                 ["registros", "Registros guardados"],
@@ -715,10 +707,10 @@ export default function InvestigacionFlow({
                   key={key}
                   type="button"
                   onClick={() => setTab(key as typeof tab)}
-                  className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${
+                  className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-150 ${
                     tab === key
-                      ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      ? "bg-teal-600 text-white shadow-sm"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                   }`}
                 >
                   {label}
@@ -737,7 +729,7 @@ export default function InvestigacionFlow({
                 <div className="mb-4">
                   <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Herramienta principal</p>
                 </div>
-                <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+                <div>
                 <div className="space-y-6">
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-100/50">
                     <h2 className="text-xl font-bold tracking-tight">
@@ -898,19 +890,6 @@ export default function InvestigacionFlow({
                   </div>
                 </div>
 
-                <aside className="space-y-5">
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-sm">
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                      </div>
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                        Recursos complementarios
-                      </p>
-                    </div>
-                    <RecursosComplementarios actividad="investigacion" />
-                  </div>
-                </aside>
               </div>
             </>
             )}
@@ -970,6 +949,15 @@ export default function InvestigacionFlow({
                               {item.contexto_servicio ||
                                 "Sin contexto registrado"}
                             </p>
+                            <p className="mt-2 text-xs text-slate-400">
+                              Creado por {usuarioNombre} ·{" "}
+                              {item.created_at
+                                ? new Intl.DateTimeFormat("es-CL", {
+                                    dateStyle: "medium",
+                                    timeStyle: "short",
+                                  }).format(new Date(item.created_at))
+                                : "fecha no disponible"}
+                            </p>
 
                             <div className="mt-3 flex flex-wrap gap-2">
                               {(item.personas_a_comprender || [])
@@ -997,12 +985,10 @@ export default function InvestigacionFlow({
                         <div className="mt-5 flex flex-wrap gap-4 text-sm">
                           <button
                             type="button"
-                            onClick={() =>
-                              seleccionarInvestigacion(item.id, false)
-                            }
+                            onClick={() => seleccionarInvestigacion(item.id, true)}
                             className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
                           >
-                            Ver
+                            Ver detalle
                           </button>
 
                           <button
@@ -1021,23 +1007,15 @@ export default function InvestigacionFlow({
                             Eliminar
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => validarInvestigacion(item.id)}
-                            className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
-                          >
-                            Validar plan
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              seleccionarInvestigacion(item.id, true)
-                            }
-                            className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
-                          >
-                            Ver lienzo
-                          </button>
+                          {item.estado_plan !== "validado" && (
+                            <button
+                              type="button"
+                              onClick={() => validarInvestigacion(item.id)}
+                              className="font-semibold text-teal-700 transition-all duration-150 hover:text-teal-800 hover:underline underline-offset-2"
+                            >
+                              Validar plan
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1127,13 +1105,15 @@ export default function InvestigacionFlow({
                             Eliminar
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => validarInvestigacion(selected.id)}
-                            className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
-                          >
-                            Aceptar y validar plan
-                          </button>
+                          {selected.estado_plan !== "validado" && (
+                            <button
+                              type="button"
+                              onClick={() => validarInvestigacion(selected.id)}
+                              className="rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
+                            >
+                              Aceptar y validar plan
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1350,13 +1330,15 @@ export default function InvestigacionFlow({
                             Descargar PDF
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => validarInvestigacion(lienzo.id)}
-                            className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
-                          >
-                            Validar plan
-                          </button>
+                          {lienzo.estado_plan !== "validado" && (
+                            <button
+                              type="button"
+                              onClick={() => validarInvestigacion(lienzo.id)}
+                              className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
+                            >
+                              Validar plan
+                            </button>
+                          )}
                         </>
                       )}
                     </div>

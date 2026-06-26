@@ -225,6 +225,12 @@ class EvidenciaArchivoCreate(EvidenciaCreate):
     mime_type: Optional[str] = None
     contenido_base64: str = Field(..., min_length=10)
 
+class ImagenPerfilCreate(BaseModel):
+    proyecto_id: str
+    nombre_original: str = Field(..., min_length=2)
+    mime_type: str
+    contenido_base64: str = Field(..., min_length=10)
+
 
 class EvidenciaUpdate(BaseModel):
     calendarizacion_id: Optional[str] = None

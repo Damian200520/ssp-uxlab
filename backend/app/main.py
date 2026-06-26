@@ -33,6 +33,7 @@ from app.models import (
     NecesidadUpdate,
     EvidenciaCreate,
     EvidenciaArchivoCreate,
+    ImagenPerfilCreate,
     EvidenciaUpdate,
     IASintesisRequest,
     IASugerenciaRequest,
@@ -1002,6 +1003,19 @@ async def crear_evidencia_archivo(data: EvidenciaArchivoCreate):
     return {
         "message": "Evidencia con archivo creada correctamente",
         "data": evidencia,
+    }
+
+
+@app.post("/personas-usuarias/imagen")
+async def subir_imagen_perfil(data: ImagenPerfilCreate):
+    proyecto = await crud.obtener_proyecto(data.proyecto_id)
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado.")
+
+    url_archivo = storage_service.guardar_imagen_perfil(data)
+    return {
+        "message": "Imagen de perfil cargada correctamente",
+        "url": url_archivo,
     }
 
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
-import RecursosComplementarios from "./RecursosComplementarios";
+import TagInput from "./TagInput";
 import { apiFetch as fetch } from "../../lib/api";
 
 const NIVELES = ["Bajo", "Medio", "Alto"] as const;
@@ -685,7 +685,7 @@ window.dispatchEvent(
   return (
     <main className="min-h-0 bg-gradient-to-b from-slate-50 to-slate-100/50 text-slate-900">
       <div className="flex">
-        <aside className="hidden min-h-0 w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+        <aside className="hidden">
           <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
           <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
             {(
@@ -717,13 +717,7 @@ window.dispatchEvent(
           <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="inline-flex rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-2 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
-                  Propósito 1 · Diseñar servicios centrados en las personas
-                </div>
-
-                <div className="mt-5 h-1 w-16 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400" />
-
-                <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
                   Habilitación y Expectativas
                 </h1>
 
@@ -782,7 +776,36 @@ window.dispatchEvent(
 
             <AsistenciaIAEtapa etapa={3} contexto="Habilitación y Expectativas" />
 
-            <div className="mb-6 flex gap-4 border-b border-slate-200/80">
+            <div className="mb-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setTab("habilitacion")}
+                className={`rounded-lg border p-4 text-left transition ${
+                  tab === "habilitacion"
+                    ? "border-teal-300 bg-teal-50"
+                    : "border-slate-200 bg-white hover:border-teal-200"
+                }`}
+              >
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">Paso 1</span>
+                <p className="mt-1 text-sm font-bold text-slate-900">Registrar habilitación</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">Evalúa acceso, conocimiento, competencia digital, barreras y facilitadores.</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("expectativas")}
+                className={`rounded-lg border p-4 text-left transition ${
+                  tab === "expectativas"
+                    ? "border-teal-300 bg-teal-50"
+                    : "border-slate-200 bg-white hover:border-teal-200"
+                }`}
+              >
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">Paso 2</span>
+                <p className="mt-1 text-sm font-bold text-slate-900">Registrar expectativas</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">Usa el mismo perfil seleccionado para documentar lo que espera del servicio.</p>
+              </button>
+            </div>
+
+            <div className="ux-card mb-6 grid gap-2 rounded-lg p-2 sm:grid-cols-4">
               {[
                 ["habilitacion", "Habilitación"],
                 ["expectativas", "Expectativas"],
@@ -793,9 +816,9 @@ window.dispatchEvent(
                   key={key}
                   type="button"
                   onClick={() => setTab(key as typeof tab)}
-                  className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${tab === key
-                      ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
+                  className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-150 ${tab === key
+                      ? "bg-teal-600 text-white shadow-sm"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     }`}
                 >
                   {label}
@@ -885,28 +908,21 @@ window.dispatchEvent(
 
                     <div className="grid gap-4 lg:grid-cols-2">
                       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
-                        <label className="font-semibold text-slate-700">Barreras detectadas</label>
-                        <textarea
+                        <TagInput
+                          label="Barreras detectadas"
                           value={habilitacionForm.barreras_detectadas}
-                          onChange={(e) =>
-                            updateHabilitacionField(
-                              "barreras_detectadas",
-                              e.target.value
-                            )
-                          }
-                          placeholder="Ej.: dificultad con canales digitales"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
+                          onChange={(value) => updateHabilitacionField("barreras_detectadas", value)}
+                          placeholder="Agregar barrera"
+                          tone="amber"
                         />
                       </div>
                       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200">
-                        <label className="font-semibold text-slate-700">Facilitadores</label>
-                        <textarea
+                        <TagInput
+                          label="Facilitadores"
                           value={habilitacionForm.facilitadores}
-                          onChange={(e) =>
-                            updateHabilitacionField("facilitadores", e.target.value)
-                          }
-                          placeholder="Ej.: apoyo presencial, material simple"
-                          className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 hover:border-slate-300"
+                          onChange={(value) => updateHabilitacionField("facilitadores", value)}
+                          placeholder="Agregar facilitador"
+                          tone="teal"
                         />
                       </div>
                       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all duration-200 lg:col-span-2">
@@ -1181,17 +1197,6 @@ window.dispatchEvent(
                     )}
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-100/50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-sm">
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                      </div>
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                        Recursos complementarios
-                      </p>
-                    </div>
-                    <RecursosComplementarios actividad="habilitacion" />
-                  </div>
                 </aside>
               </div>
             </>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, X, User } from "lucide-react";
 import AsistenciaIAEtapa from "./AsistenciaIAEtapa";
+import TagInput from "./TagInput";
 import { apiFetch as fetch } from "../../lib/api";
 
 
@@ -10,6 +11,7 @@ interface Persona {
     id: string;
     nombre: string;
     rol: string;
+    necesidades: string[];
 }
 
 interface Necesidad {
@@ -133,6 +135,7 @@ function mapPersonaUsuaria(row: any): Persona {
         id: String(row.id),
         nombre: row.nombre_arquetipo || "Perfil sin nombre",
         rol: row.rol || "",
+        necesidades: Array.isArray(row.necesidades) ? row.necesidades : [],
     };
 }
 
@@ -308,7 +311,7 @@ export default function NecesidadesFlow({
             const resultado = (json.necesidades ?? []).map(mapNecesidad);
             setNecesidades(resultado);
             setLienzoSeleccionado((prev) =>
-                prev ? (resultado.find((n: Necesidad) => n.id === prev.id) ?? null) : null
+                prev ? (resultado.find((n: Necesidad) => n.id === prev.id) ?? resultado[0] ?? null) : resultado[0] ?? null
             );
         } catch (error) {
             addToast(
@@ -381,6 +384,22 @@ export default function NecesidadesFlow({
         if (!res.ok) {
             addToast("Error al guardar: " + (await res.text()), "error");
         } else {
+            const perfil = personas.find((persona) => persona.id === form.persona_id);
+            if (perfil && form.objetivo.trim()) {
+                const objetivos = Array.from(new Set([...perfil.necesidades, form.objetivo.trim()]));
+                const perfilRes = await fetch(`${API_URL}/personas-usuarias/${perfil.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ necesidades: objetivos }),
+                });
+                if (perfilRes.ok) {
+                    setPersonas((actuales) =>
+                        actuales.map((persona) =>
+                            persona.id === perfil.id ? { ...persona, necesidades: objetivos } : persona
+                        )
+                    );
+                }
+            }
             addToast(idEnEdicion ? "¡Necesidad actualizada!" : "¡Necesidad guardada!", "success");
             resetForm(personas);
             await cargarNecesidades();
@@ -485,7 +504,7 @@ export default function NecesidadesFlow({
             )}
 
             <div className="flex">
-                <aside className="hidden min-h-0 w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-sm p-6 lg:block">
+                <aside className="hidden">
                     <div className="text-2xl font-bold bg-gradient-to-br from-teal-700 to-emerald-700 bg-clip-text text-transparent">SSP·UXLab</div>
                     <nav className="mt-10 space-y-1 text-sm flex flex-col items-start">
                         {(
@@ -517,13 +536,7 @@ export default function NecesidadesFlow({
                     <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm px-6 py-4">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <div className="inline-flex rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 px-4 py-2 text-sm font-bold text-teal-700 shadow-sm ring-1 ring-teal-100/50">
-                                    Propósito 1 · Diseñar servicios centrados en las personas
-                                </div>
-
-                                <div className="mt-5 h-1 w-16 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400" />
-
-                                <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">Necesidades</h1>
+                                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Necesidades</h1>
                                 <p className="mt-1 text-slate-500 leading-relaxed">
                                     Comprende el problema completo, las motivaciones de las personas y las oportunidades de mejora del servicio.
                                 </p>
@@ -542,7 +555,7 @@ export default function NecesidadesFlow({
 
                         <AsistenciaIAEtapa etapa={4} contexto="Necesidades" />
 
-                        <div className="mb-6 flex gap-6 border-b border-slate-200/80">
+                        <div className="ux-card mb-6 grid gap-2 rounded-lg p-2 sm:grid-cols-3">
                             {(
                                 [
                                     ["formulario", idEnEdicion ? "Editando necesidad…" : "Formulario"],
@@ -553,9 +566,9 @@ export default function NecesidadesFlow({
                                 <button
                                     key={key}
                                     onClick={() => setTab(key)}
-                                    className={`border-b-2 px-2 pb-3 text-sm font-semibold transition-all duration-150 ${tab === key
-                                        ? "border-teal-600 text-teal-700"
-                                        : "border-transparent text-slate-500 hover:text-slate-700"
+                                    className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-150 ${tab === key
+                                        ? "bg-teal-600 text-white shadow-sm"
+                                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                                         }`}
                                 >
                                     {label}
@@ -675,19 +688,18 @@ export default function NecesidadesFlow({
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="font-semibold text-sm text-slate-700">Acciones que debe realizar</label>
-                                                <textarea
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className={`rounded-lg ${erroresForm.acciones ? "ring-2 ring-red-200" : ""}`}>
+                                                <TagInput
+                                                    label="Acciones que debe realizar"
+                                                    description="Agrega cada acción por separado y en el orden en que ocurre."
                                                     value={form.acciones}
-                                                    onChange={(e) => {
-                                                        setForm({ ...form, acciones: e.target.value });
-                                                        if (erroresForm.acciones)
-                                                            setErroresForm({ ...erroresForm, acciones: undefined });
+                                                    onChange={(value) => {
+                                                        setForm({ ...form, acciones: value });
+                                                        if (erroresForm.acciones) setErroresForm({ ...erroresForm, acciones: undefined });
                                                     }}
-                                                    placeholder="Paso a paso de lo que la persona hace..."
-                                                    className={`mt-2 min-h-32 w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 ${erroresForm.acciones ? "border-red-400 bg-red-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
-                                                        }`}
+                                                    placeholder="Agregar acción"
+                                                    tone="teal"
                                                 />
                                                 {erroresForm.acciones && (
                                                     <p className="mt-1 text-xs text-red-500">{erroresForm.acciones}</p>
@@ -707,9 +719,7 @@ export default function NecesidadesFlow({
                                         </div>
 
                                         <div>
-                                            <label className="font-semibold text-sm text-red-700">
-                                                Fricciones Detectadas
-                                            </label>
+                                            <label className="font-semibold text-sm text-red-700">Fricciones sugeridas</label>
                                             <div className="flex flex-wrap gap-2 mt-2 mb-2">
                                                 {FRICCIONES_SUGERIDAS.map((fric) => (
                                                     <button
@@ -729,11 +739,12 @@ export default function NecesidadesFlow({
                                                     </button>
                                                 ))}
                                             </div>
-                                            <textarea
+                                            <TagInput
+                                                label="Fricciones detectadas"
                                                 value={form.fricciones}
-                                                onChange={(e) => setForm({ ...form, fricciones: e.target.value })}
-                                                placeholder="Dolores, demoras o bloqueos encontrados..."
-                                                className="w-full min-h-20 rounded-xl border border-red-200/60 bg-red-50/40 px-3 py-2 text-sm outline-none transition-all duration-150 focus:border-red-500 focus:ring-2 focus:ring-red-100 hover:border-red-300"
+                                                onChange={(value) => setForm({ ...form, fricciones: value })}
+                                                placeholder="Agregar una fricción propia"
+                                                tone="rose"
                                             />
                                         </div>
 
@@ -902,12 +913,6 @@ export default function NecesidadesFlow({
                                                             Editar
                                                         </button>
                                                         <button
-                                                            onClick={() => validarNecesidad(n.id)}
-                                                            className="text-xs font-semibold text-green-700 transition-all duration-150 border border-green-200/60 px-3 py-1 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 shadow-sm"
-                                                        >
-                                                            Validar
-                                                        </button>
-                                                        <button
                                                             onClick={() => solicitarEliminar(n.id)}
                                                             className="text-xs font-semibold text-red-600 transition-all duration-150 border border-red-200/60 px-3 py-1 rounded-lg hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
                                                         >
@@ -1032,12 +1037,14 @@ export default function NecesidadesFlow({
                                                     >
                                                         Editar Necesidad
                                                     </button>
-                                                    <button
-                                                        onClick={() => validarNecesidad(lienzoSeleccionado.id)}
-                                                        className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
-                                                    >
-                                                        Validar Necesidad
-                                                    </button>
+                                                    {lienzoSeleccionado.estado !== "Validado" && (
+                                                        <button
+                                                            onClick={() => validarNecesidad(lienzoSeleccionado.id)}
+                                                            className="w-full rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-teal-700 hover:to-emerald-700 hover:shadow-md"
+                                                        >
+                                                            Validar necesidad
+                                                        </button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>

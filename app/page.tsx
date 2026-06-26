@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, ArrowRight, ArrowLeft, Loader2, Lock, CalendarDays, TrendingUp } from "lucide-react";
+import { Search, Users, Zap, Lightbulb, Link, BarChart3, Target, Compass, Eye, Star, Handshake, Sparkles, Clipboard, FileText, Clock, AlertTriangle, CheckCircle, Check, X, Circle, ArrowRight, ArrowLeft, Loader2, Lock, CalendarDays, TrendingUp, BookOpen } from "lucide-react";
 import InvestigacionFlow from "./components/InvestigacionFlow";
 import PersonasFlow from "./components/PersonasFlow";
 import HabilitacionFlow from "./components/HabilitacionFlow";
@@ -16,6 +16,8 @@ import DashboardAvanceProp1 from "./components/DashboardAvanceProp1";
 import VinculacionFlow from "./components/VinculacionFlow";
 import MedicionFlow from "./components/MedicionFlow";
 import MomentosCriticosFlow from "./components/MomentosCriticosFlow";
+import BibliotecaRecursos from "./components/BibliotecaRecursos";
+import InformeFinalProp1 from "./components/InformeFinalProp1";
 import type { FlujoHerramienta } from "./data/herramientasProp1";
 import { apiFetch as fetch } from "../lib/api";
 import { getSupabaseClient } from "../lib/supabase";
@@ -31,6 +33,8 @@ type FlujoActivo =
   | "catalogo"
   | "ejecucion"
   | "dashboard"
+  | "recursos"
+  | "analisis"
   | "trazabilidad"
   | "investigacion"
   | "personas"
@@ -782,9 +786,6 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="hidden rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-500 shadow-sm sm:inline-flex">
-                Selección metodológica
-              </span>
               <button
                 type="button"
                 onClick={cerrarSesion}
@@ -982,6 +983,10 @@ export default function Home() {
                   );
                 })}
               </div>
+              <div className="mt-3 border-t border-slate-100 pt-3">
+                <SidebarNavButton active={current === "analisis"} icon={<Sparkles className="h-4 w-4" />} label="Analizar etapas" helper="Cierre del propósito" onClick={() => setCurrent("analisis")} />
+                <SidebarNavButton active={current === "recursos"} icon={<BookOpen className="h-4 w-4" />} label="Recursos" helper="Guías de apoyo" onClick={() => setCurrent("recursos")} />
+              </div>
             </div>
           </div>
         </aside>
@@ -1013,7 +1018,7 @@ export default function Home() {
             </div>
           </div>
 
-      {current !== "catalogo" && current !== "calendarizacion" && current !== "ejecucion" && current !== "resultados" && current !== "trazabilidad" && (
+      {current !== "catalogo" && current !== "calendarizacion" && current !== "ejecucion" && current !== "dashboard" && current !== "evidencias" && current !== "resultados" && current !== "trazabilidad" && current !== "recursos" && current !== "analisis" && (
       <div className="relative z-10 border-b border-slate-100 bg-white px-6 py-3">
         <div className="mx-auto grid max-w-7xl gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
           <div>
@@ -1052,7 +1057,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => etapaAnterior && irAEtapa(etapaAnterior)}
-              disabled={!etapaAnterior || !numeroEtapaActual || current === "evidencias"}
+              disabled={!etapaAnterior || !numeroEtapaActual}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition-all duration-150 hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-45"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -1060,11 +1065,11 @@ export default function Home() {
             </button>
             <button
               type="button"
-              onClick={() => etapaSiguiente && irAEtapa(etapaSiguiente)}
-              disabled={!etapaSiguiente || !numeroEtapaActual || current === "evidencias"}
+              onClick={() => current === "momentos" ? setCurrent("analisis") : etapaSiguiente && irAEtapa(etapaSiguiente)}
+              disabled={current !== "momentos" && (!etapaSiguiente || !numeroEtapaActual)}
               className="ux-button-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
             >
-              Continuar
+              {current === "momentos" ? "Analizar etapas" : "Continuar"}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -1115,7 +1120,16 @@ export default function Home() {
             onAbrirEvidencias={() => setCurrent("evidencias")}
           />
         )}
-        {current === "investigacion" && <InvestigacionFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
+        {current === "recursos" && <BibliotecaRecursos />}
+        {current === "analisis" && (
+          <InformeFinalProp1
+            apiUrl={API_URL}
+            proyectoId={proyectoIdActual}
+            institucion={usuario?.institucion}
+            onAbrirResultados={() => setCurrent("resultados")}
+          />
+        )}
+        {current === "investigacion" && <InvestigacionFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} usuarioNombre={usuario?.nombre_completo || usuario?.email || "Usuario del proyecto"} />}
         {current === "personas" && <PersonasFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
         {current === "habilitacion" && <HabilitacionFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
         {current === "necesidades" && <NecesidadesFlow proyectoId={proyectoIdActual} onNavigate={navegarFlujo} />}
@@ -1223,10 +1237,10 @@ function PropositoCard({
 }) {
   const esDisponible = proposito.activo;
   const titulo = numero === 1
-    ? "Propósito 1: Comprender la experiencia actual"
-    : proposito.titulo;
+    ? "Comprender la experiencia actual"
+    : proposito.titulo.replace(/^Propósito\s+\d+\s*:\s*/i, "");
   const descripcion = numero === 1
-    ? "Permite levantar información inicial, caracterizar personas usuarias, identificar expectativas, necesidades, vínculos, mediciones y momentos críticos de la experiencia."
+    ? "Caracteriza personas usuarias e identifica expectativas, necesidades y momentos críticos de la experiencia."
     : proposito.descripcion;
 
   return (

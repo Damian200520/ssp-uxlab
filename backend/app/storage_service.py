@@ -116,6 +116,37 @@ def guardar_archivo_evidencia(data) -> str:
     ruta_final.write_bytes(archivo_bytes)
     return f"/uploads/evidencias/{nombre_final}"
 
+def guardar_imagen_perfil(data) -> str:
+    mime_type = (data.mime_type or "").lower()
+    if mime_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(
+            status_code=415,
+            detail="La imagen debe estar en formato JPG, PNG o WEBP.",
+        )
+
+    archivo_bytes = decodificar_archivo_base64(data.contenido_base64)
+    if len(archivo_bytes) > 2 * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail="La imagen de perfil no puede superar 2 MB.",
+        )
+
+    nombre_final = nombre_seguro_archivo(data.nombre_original)
+    if usar_supabase_storage():
+        return subir_a_supabase_storage(
+            archivo_bytes=archivo_bytes,
+            nombre_final=nombre_final,
+            mime_type=mime_type,
+            proyecto_id=data.proyecto_id,
+            etapa=2,
+            carpeta="perfiles",
+            signed_url_ttl=60 * 60 * 24 * 365,
+        )
+
+    ruta_final = EVIDENCIAS_UPLOAD_DIR / nombre_final
+    ruta_final.write_bytes(archivo_bytes)
+    return f"/uploads/evidencias/{nombre_final}"
+
 
 def subir_a_supabase_storage(
     archivo_bytes: bytes,
@@ -123,6 +154,8 @@ def subir_a_supabase_storage(
     mime_type: str,
     proyecto_id: str,
     etapa: int,
+    carpeta: str | None = None,
+    signed_url_ttl: int = 60 * 60 * 24 * 7,
 ) -> str:
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
         raise HTTPException(
@@ -134,7 +167,11 @@ def subir_a_supabase_storage(
         )
 
     base_url = SUPABASE_URL.rstrip("/")
-    path = f"proyectos/{proyecto_id}/etapa-{etapa}/{nombre_final}"
+    path = (
+        f"proyectos/{proyecto_id}/{carpeta}/{nombre_final}"
+        if carpeta
+        else f"proyectos/{proyecto_id}/etapa-{etapa}/{nombre_final}"
+    )
     upload_url = f"{base_url}/storage/v1/object/{SUPABASE_STORAGE_BUCKET}/{path}"
 
     request = urllib.request.Request(
@@ -169,15 +206,15 @@ def subir_a_supabase_storage(
         ) from exc
 
     if EVIDENCIA_STORAGE_MODE != "public":
-        return crear_signed_url(path)
+        return crear_signed_url(path, signed_url_ttl)
 
     return f"{base_url}/storage/v1/object/public/{SUPABASE_STORAGE_BUCKET}/{path}"
 
 
-def crear_signed_url(path: str) -> str:
+def crear_signed_url(path: str, expires_in: int = 60 * 60 * 24 * 7) -> str:
     base_url = SUPABASE_URL.rstrip("/")
     sign_url = f"{base_url}/storage/v1/object/sign/{SUPABASE_STORAGE_BUCKET}/{path}"
-    payload = json.dumps({"expiresIn": 60 * 60 * 24 * 7}).encode("utf-8")
+    payload = json.dumps({"expiresIn": expires_in}).encode("utf-8")
 
     request = urllib.request.Request(
         sign_url,

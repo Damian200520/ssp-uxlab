@@ -3159,7 +3159,7 @@ async def validar_plan_investigacion(investigacion_id: str):
             """
             update investigacion
             set
-                estado_plan = 'listo_revision',
+                estado_plan = 'validado',
                 completado = true,
                 updated_at = now()
             where id = $1::uuid
