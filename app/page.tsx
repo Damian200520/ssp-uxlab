@@ -189,6 +189,16 @@ function flujoDesdeEtapa(etapa: RutaEtapa): FlujoActivo {
   return "momentos";
 }
 
+function flujoDesdeNumero(numero: number): FlujoActivo {
+  if (numero === 1) return "investigacion";
+  if (numero === 2) return "personas";
+  if (numero === 3) return "habilitacion";
+  if (numero === 4) return "necesidades";
+  if (numero === 5) return "vinculacion";
+  if (numero === 6) return "medicion";
+  return "momentos";
+}
+
 function numeroDesdeFlujo(flujo: FlujoActivo) {
   if (flujo === "catalogo") return null;
   if (flujo === "ejecucion") return null;
@@ -275,6 +285,7 @@ export default function Home() {
   const [modoAcceso, setModoAcceso] = useState<"ingresar" | "registrar">("ingresar");
 
   const [loading, setLoading] = useState(false);
+  const [rutaSincronizando, setRutaSincronizando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [mensajeTipo, setMensajeTipo] = useState<"success" | "warning" | "error">("warning");
 
@@ -329,6 +340,9 @@ export default function Home() {
     async function actualizarRutaDesdeFlujo(event: Event) {
       const customEvent = event as CustomEvent<{ siguienteEtapa?: number }>;
       const siguienteEtapa = customEvent.detail?.siguienteEtapa;
+      setRutaSincronizando(true);
+      setMensajeTipo("warning");
+      setMensaje("Actualizando recorrido metodológico...");
       try {
         if (siguienteEtapa) {
           const res = await fetch(`${API_URL}/proyectos/${proyectoIdActual}/etapa`, {
@@ -337,21 +351,19 @@ export default function Home() {
             body: JSON.stringify({ etapa_actual: siguienteEtapa }),
           });
           if (!res.ok) throw new Error(await res.text());
-          if (siguienteEtapa === 1) setCurrent("investigacion");
-          if (siguienteEtapa === 2) setCurrent("personas");
-          if (siguienteEtapa === 3) setCurrent("habilitacion");
-          if (siguienteEtapa === 4) setCurrent("necesidades");
-          if (siguienteEtapa === 5) setCurrent("vinculacion");
-          if (siguienteEtapa === 6) setCurrent("medicion");
-          if (siguienteEtapa === 7) setCurrent("momentos");
         }
         await cargarRuta();
+        if (siguienteEtapa) {
+          setCurrent(flujoDesdeNumero(siguienteEtapa));
+        }
         setMensajeTipo("success");
         setMensaje("Avance actualizado correctamente.");
       } catch (error) {
         console.error("Error al actualizar avance desde flujo:", error);
         setMensajeTipo("error");
         setMensaje("No se pudo actualizar el avance del propósito.");
+      } finally {
+        setRutaSincronizando(false);
       }
     }
     window.addEventListener("actualizar-ruta-proposito", actualizarRutaDesdeFlujo);
@@ -923,7 +935,10 @@ export default function Home() {
           <div className="border-t border-slate-100 px-6 py-4 xl:w-72 xl:border-l xl:border-t-0">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500">Avance total</span>
-              <span className="text-sm font-bold text-teal-700">{porcentajeAvance}%</span>
+              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-teal-700">
+                {rutaSincronizando && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {porcentajeAvance}%
+              </span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
               <div
@@ -932,7 +947,9 @@ export default function Home() {
               />
             </div>
             <p className="mt-1.5 text-xs text-slate-400">
-              {etapasCompletadas} de {totalEtapas} etapas completadas
+              {rutaSincronizando
+                ? "Actualizando recorrido..."
+                : `${etapasCompletadas} de ${totalEtapas} etapas completadas`}
             </p>
           </div>
         </div>
@@ -942,6 +959,15 @@ export default function Home() {
       {mensaje && (
         <div className="relative z-10 px-6 pt-4">
           <MensajeAlerta mensaje={mensaje} tipo={mensajeTipo} onClose={() => setMensaje("")} />
+        </div>
+      )}
+
+      {rutaSincronizando && (
+        <div className="relative z-10 px-6 pt-4">
+          <div className="mx-auto flex max-w-[1600px] items-center gap-2 rounded-lg border border-teal-100 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800 shadow-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Sincronizando avances guardados con la ruta del Propósito 1...
+          </div>
         </div>
       )}
 
@@ -978,6 +1004,7 @@ export default function Home() {
                       key={`${etapa.numero}-${etapa.clave}`}
                       etapa={etapa}
                       active={esCurrent}
+                      disabled={rutaSincronizando}
                       onClick={() => irAEtapa(etapa)}
                     />
                   );
@@ -1010,6 +1037,7 @@ export default function Home() {
                       etapa={etapa}
                       activa={esCurrent}
                       icono={etapaIcono[etapa.clave] ?? <Circle className="h-5 w-5" />}
+                      disabled={rutaSincronizando}
                       onClick={() => irAEtapa(etapa)}
                     />
                   );
@@ -1028,11 +1056,13 @@ export default function Home() {
                 {numeroEtapaActual || 1}. {etapaActiva?.nombre || "Investigación"}
               </span>
               <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                etapaActiva?.completada
+                rutaSincronizando
+                  ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
+                  : etapaActiva?.completada
                   ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
                   : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
               }`}>
-                {estadoEtapaActiva}
+                {rutaSincronizando ? "Actualizando..." : estadoEtapaActiva}
               </span>
             </div>
             <p className="mt-1 text-xs text-slate-500">
@@ -1057,7 +1087,8 @@ export default function Home() {
             <button
               type="button"
               onClick={() => etapaAnterior && irAEtapa(etapaAnterior)}
-              disabled={!etapaAnterior || !numeroEtapaActual}
+              disabled={rutaSincronizando || !etapaAnterior || !numeroEtapaActual}
+              aria-busy={rutaSincronizando}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition-all duration-150 hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-45"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -1066,9 +1097,10 @@ export default function Home() {
             <button
               type="button"
               onClick={() => current === "momentos" ? setCurrent("analisis") : etapaSiguiente && irAEtapa(etapaSiguiente)}
-              disabled={current !== "momentos" && (!etapaSiguiente || !numeroEtapaActual)}
+              disabled={rutaSincronizando || (current !== "momentos" && (!etapaSiguiente || !numeroEtapaActual))}
               className="ux-button-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
             >
+              {rutaSincronizando && <Loader2 className="h-4 w-4 animate-spin" />}
               {current === "momentos" ? "Analizar etapas" : "Continuar"}
               <ArrowRight className="h-4 w-4" />
             </button>
@@ -1380,10 +1412,12 @@ function SidebarNavButton({
 function SidebarEtapaButton({
   etapa,
   active,
+  disabled = false,
   onClick,
 }: {
   etapa: RutaEtapa;
   active: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   const estadoLabel = active
@@ -1408,6 +1442,7 @@ function SidebarEtapaButton({
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={`group flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-all duration-200 ${
         active
@@ -1415,7 +1450,7 @@ function SidebarEtapaButton({
           : etapa.completada
           ? "border-emerald-100 bg-emerald-50/50 hover:border-emerald-200"
           : "border-transparent hover:border-slate-200 hover:bg-slate-50"
-      }`}
+      } disabled:cursor-wait disabled:opacity-70`}
     >
       <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${active ? "bg-teal-600 text-white" : etapa.completada ? "bg-emerald-600 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}>
         {etapa.numero}
@@ -1434,11 +1469,13 @@ function EtapaTab({
   etapa,
   activa,
   icono,
+  disabled = false,
   onClick,
 }: {
   etapa: RutaEtapa;
   activa: boolean;
   icono: React.ReactNode;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   const estado = etapa.completada
@@ -1475,6 +1512,7 @@ function EtapaTab({
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={`group relative min-h-[96px] rounded-lg border p-2.5 text-left transition-all duration-200 ${
         activa
@@ -1486,7 +1524,7 @@ function EtapaTab({
           : estado === "completada"
           ? "border-emerald-200 bg-[#e7f7ec] hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-sm"
           : "border-slate-200 bg-[#fbfcf7] hover:-translate-y-0.5 hover:border-teal-200 hover:bg-[#eef7f0] hover:shadow-sm"
-      }`}
+      } disabled:cursor-wait disabled:opacity-70`}
     >
       <div className="flex items-center justify-between gap-2">
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold ${

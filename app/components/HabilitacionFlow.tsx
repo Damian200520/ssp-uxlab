@@ -567,9 +567,12 @@ export default function HabilitacionFlow({
         persona_usuaria_id: perfilSeleccionado?.id || "",
       });
 
-      await cargarExpectativas();
+      await Promise.all([cargarExpectativas(), cargarHabilitaciones()]);
 
-      setMessage("Expectativa guardada correctamente.");
+      setTab("registros");
+      setMessage(
+        "Expectativa guardada correctamente. Revisa el registro y presiona Validar para completar la etapa."
+      );
     } catch (error) {
       console.error("Error al guardar expectativa:", error);
       setMessage(
