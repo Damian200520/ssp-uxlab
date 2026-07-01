@@ -31,6 +31,24 @@ const TIPOS_EVIDENCIA = [
 ];
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const EXTENSIONES_PERMITIDAS = new Set([
+  "csv",
+  "doc",
+  "docx",
+  "jpeg",
+  "jpg",
+  "pdf",
+  "png",
+  "ppt",
+  "pptx",
+  "txt",
+  "webp",
+  "xls",
+  "xlsx",
+]);
+const ACCEPT_EVIDENCIAS = [...EXTENSIONES_PERMITIDAS]
+  .map((extension) => `.${extension}`)
+  .join(",");
 
 type Evidencia = {
   id: string;
@@ -106,6 +124,24 @@ function archivoABase64(file: File) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function extensionArchivo(file: File) {
+  return file.name.split(".").pop()?.toLowerCase() || "";
+}
+
+async function mensajeErrorRespuesta(response: Response) {
+  const fallback = `No se pudo guardar la evidencia (error ${response.status}).`;
+
+  try {
+    const body = await response.json();
+    if (typeof body?.detail === "string" && body.detail.trim()) return body.detail;
+    if (typeof body?.message === "string" && body.message.trim()) return body.message;
+  } catch {
+    return fallback;
+  }
+
+  return fallback;
 }
 
 function urlEvidencia(url?: string | null) {
@@ -214,6 +250,15 @@ export default function EvidenciasFlow({ proyectoId = PROYECTO_ID }: { proyectoI
       return;
     }
 
+    if (!EXTENSIONES_PERMITIDAS.has(extensionArchivo(file))) {
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setMessage(
+        "Tipo de archivo no permitido. Usa PDF, Word, Excel, PowerPoint, TXT, CSV o imagenes JPG, PNG y WEBP. Para HTML, SVG, JavaScript o videos, registra un enlace seguro."
+      );
+      return;
+    }
+
     setSelectedFile(file);
     setMessage("");
     setForm((prev) => ({
@@ -292,7 +337,7 @@ export default function EvidenciasFlow({ proyectoId = PROYECTO_ID }: { proyectoI
         }
       );
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await mensajeErrorRespuesta(res));
 
       if (editingId) {
         setMessage("Evidencia actualizada correctamente.");
@@ -304,7 +349,11 @@ export default function EvidenciasFlow({ proyectoId = PROYECTO_ID }: { proyectoI
       await cargarEvidencias();
     } catch (error) {
       console.error("Error al guardar evidencia:", error);
-      setMessage("No se pudo guardar la evidencia. Revisa permisos RLS o columnas de la tabla.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar la evidencia. Intenta nuevamente."
+      );
     } finally {
       setLoading(false);
     }
@@ -477,6 +526,7 @@ export default function EvidenciasFlow({ proyectoId = PROYECTO_ID }: { proyectoI
                 <input
                   ref={fileInputRef}
                   type="file"
+                  accept={ACCEPT_EVIDENCIAS}
                   className="hidden"
                   onChange={(event) => {
                     const file = event.target.files?.[0];
@@ -515,7 +565,7 @@ export default function EvidenciasFlow({ proyectoId = PROYECTO_ID }: { proyectoI
                     Arrastra un archivo aqui o haz clic para seleccionarlo
                   </span>
                   <span className="mt-1 text-xs leading-5 text-slate-500">
-                    PDF, imagenes, planillas, documentos u otros respaldos. Maximo 10 MB.
+                    PDF, Word, Excel, PowerPoint, TXT, CSV o imagenes. Maximo 10 MB.
                   </span>
                 </button>
 
