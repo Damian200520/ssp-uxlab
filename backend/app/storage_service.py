@@ -252,4 +252,10 @@ def crear_signed_url(path: str, expires_in: int = 60 * 60 * 24 * 7) -> str:
     if signed_url.startswith("http"):
         return signed_url
 
-    return f"{base_url}{signed_url}"
+    if signed_url.startswith("/storage/v1/"):
+        return f"{base_url}{signed_url}"
+
+    if signed_url.startswith("/object/"):
+        return f"{base_url}/storage/v1{signed_url}"
+
+    return f"{base_url}/storage/v1/{signed_url.lstrip('/')}"
